@@ -26,6 +26,7 @@ npm run dev
 | `npm run typecheck` | Periksa tipe UI dan konfigurasi Vite |
 | `npm run lint` | Oxlint |
 | `npm test` | Regresi aktivitas/kontrak serta logika TypeScript sebelumnya |
+| `npm run test:startup` | Integrasi registry startup, opt-out, pindah lokasi, dan uninstall pada key sementara |
 | `npm run build` | Build Vite dan WindowsHost |
 | `npm start` | Jalankan hasil build |
 | `npm run test:smoke` | Uji host, UI, timer, penyimpanan, dan restart |
@@ -42,7 +43,9 @@ Tetap verifikasi manual: pergantian perangkat audio, playback/seek pada pemutar 
 
 ## Distribusi dan runtime
 
-Installer sekitar 1,24 MB; ZIP sekitar 0,89 MB; folder aplikasi sekitar 3 MB. Ukuran ini tidak termasuk runtime WebView2 bersama, profil, dan cache. Installer memakai kompresi solid. Tidak ada autostart atau auto-update aplikasi.
+Installer sekitar 1,24 MB; ZIP sekitar 0,89 MB; folder aplikasi sekitar 3 MB. Ukuran ini tidak termasuk runtime WebView2 bersama, profil, dan cache. Installer memakai kompresi solid. Tidak ada auto-update aplikasi.
+
+Auto startup aktif secara default melalui nilai `Dynamic Island` di `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, dengan path executable dalam tanda kutip. Installer mendaftarkannya setelah WebView2 tersedia; ZIP mendaftarkannya saat pertama dijalankan dan memperbarui path saat dibuka dari lokasi baru. Menu tray **Jalankan saat login Windows** menyimpan pilihan di `HKCU\Software\Andika\DynamicIsland\StartupEnabled`, sehingga pembaruan tidak mengaktifkan kembali pilihan yang dimatikan. Uninstaller menghapus entri startup hanya bila masih menunjuk salinan yang dihapus. Pengaturan Startup Windows tetap berlaku. `npm start`, `ISLAND_TEST=1`, dan profil kustom tidak mendaftarkan startup. ZIP harus disimpan di lokasi tetap; hapus entri melalui tray sebelum menghapus folder ZIP.
 
 Installer menjalankan `--ensure-webview`. Jika runtime tersedia, tidak ada unduhan tambahan. Jika belum, host mengunduh bootstrapper resmi Microsoft melalui HTTPS, memverifikasi kepercayaan Authenticode dan publisher Microsoft, lalu menjalankan `/silent /install`. Kegagalan menghentikan pemasangan dengan petunjuk mencoba kembali. Jalur runtime-belum-terpasang masih memerlukan verifikasi pada Windows bersih; lokal memakai runtime yang sudah tersedia. ZIP memerlukan WebView2 terpasang. Installer aplikasi belum ditandatangani sehingga SmartScreen dapat muncul.
 

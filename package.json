@@ -1,7 +1,7 @@
 {
   "name": "dynamic-island",
   "private": true,
-  "version": "0.2.2",
+  "version": "0.2.3",
   "type": "module",
   "description": "Dynamic Island activity overlay for Windows",
   "author": "Andika",
@@ -15,6 +15,7 @@
     "pack": "npm run build && node scripts/stage-host.mjs",
     "pack:msix": "npm run pack && pwsh -NoLogo -NoProfile -File scripts/package-msix.ps1",
     "test": "node --test tests/*.test.ts",
+    "test:startup": "pwsh -NoLogo -NoProfile -File scripts/test-startup.ps1",
     "test:native": "node scripts/smoke-webview.mjs",
     "test:smoke": "node scripts/smoke-webview.mjs",
     "lint": "oxlint",

@@ -12,6 +12,13 @@ internal static class Program
     private static int Main(string[] args)
     {
         if (args.Contains("--ensure-webview")) return RuntimeInstaller.Ensure();
+        if (args.Contains("--register-startup") || args.Contains("--unregister-startup")) {
+            try {
+                var startup = new StartupRegistration(Application.ExecutablePath);
+                if (args.Contains("--unregister-startup")) startup.Remove(); else startup.Synchronize();
+                return 0;
+            } catch (Exception error) { Trace(error.ToString()); return 1; }
+        }
         var profile = Environment.GetEnvironmentVariable("ISLAND_PROFILE_DIR");
         var suffix = "";
         if (profile != null) {
@@ -56,6 +63,19 @@ internal sealed class Overlay : Form
         var menu = new ContextMenuStrip();
         menu.Items.Add("Tampilkan", null, (_, _) => ShowOverlay());
         menu.Items.Add("Sembunyikan", null, (_, _) => Hide());
+        if (Environment.GetEnvironmentVariable("ISLAND_TEST") != "1" &&
+            Environment.GetEnvironmentVariable("ISLAND_PROFILE_DIR") == null &&
+            Environment.GetEnvironmentVariable("ISLAND_DISABLE_STARTUP") != "1") {
+            var startup = new StartupRegistration(Application.ExecutablePath);
+            var startupItem = new ToolStripMenuItem("Jalankan saat login Windows");
+            try { startup.Synchronize(); startupItem.Checked = startup.Enabled; }
+            catch (Exception error) { Program.Trace(error.ToString()); }
+            startupItem.Click += (_, _) => {
+                try { startup.SetEnabled(!startup.Enabled); startupItem.Checked = startup.Enabled; }
+                catch (Exception error) { MessageBox.Show("Pengaturan startup tidak dapat disimpan.\n\n" + error.Message, "Dynamic Island", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            };
+            menu.Items.Add(startupItem);
+        }
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Keluar", null, (_, _) => Close());
         using var iconStream = typeof(Overlay).Assembly.GetManifestResourceStream("DynamicIsland.AppIcon")!;
