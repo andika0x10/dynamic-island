@@ -102,7 +102,10 @@ try {
   assert.deepEqual(errors, [])
   console.log('WebView2 smoke passed:', JSON.stringify({ audio: snapshot.audio.availability, media: snapshot.media.availability, battery: snapshot.battery.availability }))
 } catch (error) {
-  await writeFile('test-results/webview-smoke-error.txt', String(error.stack ?? error))
+  let diagnostic = String(error.stack ?? error)
+  try { diagnostic += '\n' + await readFile(join(profile, 'startup-error.txt'), 'utf8') } catch { }
+  await writeFile('test-results/webview-smoke-error.txt', diagnostic)
+  if (process.env.CI) console.error(`::error title=WebView2 smoke::${diagnostic.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A')}`)
   throw error
 } finally {
   try { await writeFile('test-results/webview-startup-error.txt', await readFile(join(profile, 'startup-error.txt'))) } catch { }
