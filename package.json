@@ -4,16 +4,18 @@
   "version": "0.0.0",
   "type": "module",
   "main": "dist-electron/main.js",
-  "description": "Dynamic Island battery overlay for Windows",
+  "description": "Dynamic Island activity overlay for Windows",
   "author": "Andika",
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:web": "vite",
     "typecheck": "tsc -b && tsc -p tsconfig.electron.json",
-    "build": "npm run typecheck && vite build && node scripts/build-electron.mjs",
+    "build": "npm run typecheck && vite build && node scripts/build-electron.mjs && npm run build:native",
+    "build:native": "node scripts/build-native.mjs",
     "start": "node scripts/start.mjs",
     "pack": "npm run build && electron-builder --win --dir",
-    "test": "node --test tests/battery.test.ts",
+    "test": "node --test tests/*.test.ts",
+    "test:native": "node scripts/smoke-native.mjs",
     "test:smoke": "node scripts/smoke.mjs",
     "lint": "oxlint",
     "preview": "vite preview"
@@ -31,6 +33,7 @@
       "package.json"
     ],
     "asar": true,
+    "extraResources": [{ "from": "native/WindowsBridge/bin/publish", "to": "native", "filter": ["**/*", "!**/*.pdb"] }],
     "win": {
       "signAndEditExecutable": false
     }

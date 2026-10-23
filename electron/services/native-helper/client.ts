@@ -13,12 +13,16 @@ export class NativeClient {
   private serial = 0
   private pending = new Map<number, Pending>()
   private restart: ReturnType<typeof setTimeout> | undefined
+  private watchdog: ReturnType<typeof setInterval> | undefined
   constructor(private executable: string, private receive: (snapshot: NativeSnapshot | null) => void) {}
   start() {
     if (this.stopped || !existsSync(this.executable)) { this.receive(null); return }
     const child = spawn(this.executable, [], { windowsHide: true, stdio: 'pipe' })
     this.child = child
     const lines = createInterface({ input: child.stdout })
+    let lastMessage = Date.now()
+    clearInterval(this.watchdog)
+    this.watchdog = setInterval(() => { if (Date.now() - lastMessage > 20000) child.kill() }, 5000)
     child.stderr.resume() // Protocol output only; do not log personal media/notification data.
     child.stdin.on('error', () => {})
     lines.on('line', line => {
@@ -28,13 +32,14 @@ export class NativeClient {
         if (message.type === 'result') {
           const pending = this.pending.get(message.id)
           if (pending) { clearTimeout(pending.timeout); this.pending.delete(message.id); pending.resolve({ ok: message.ok === true, ...(typeof message.error === 'string' ? { error: message.error.slice(0, 200) } : {}) }) }
-        } else if (message.type === 'snapshot' && validSnapshot(message)) this.receive(message)
+        } else if (message.type === 'snapshot' && validSnapshot(message)) { lastMessage = Date.now(); this.receive(message) }
       } catch { /* Ignore malformed protocol records. */ }
     })
     let ended = false
     const exit = () => {
       if (ended) return
       ended = true
+      clearInterval(this.watchdog)
       lines.close()
       if (this.child === child) this.child = null
       for (const pending of this.pending.values()) { clearTimeout(pending.timeout); pending.resolve({ ok: false, error: 'Integrasi Windows terputus.' }) }
@@ -58,6 +63,7 @@ export class NativeClient {
   stop() {
     this.stopped = true
     clearTimeout(this.restart)
+    clearInterval(this.watchdog)
     this.child?.kill()
     for (const pending of this.pending.values()) { clearTimeout(pending.timeout); pending.resolve({ ok: false }) }
     this.pending.clear()
