@@ -1,6 +1,7 @@
 import { app, BrowserWindow, screen, type Tray } from 'electron'
 import { fileURLToPath } from 'node:url'
 import { join, dirname } from 'node:path'
+import { mkdirSync } from 'node:fs'
 import { ActivityService } from './services/activities.ts'
 import { startBatteryService } from './services/battery/service.ts'
 import { registerIPC } from './ipc/register.ts'
@@ -8,6 +9,10 @@ import { canvas, positionOverlay, secureWindow } from './overlay/window.ts'
 import { createTray } from './overlay/tray.ts'
 
 const directory = dirname(fileURLToPath(import.meta.url))
+if (process.env.ISLAND_PROFILE_DIR) {
+  mkdirSync(process.env.ISLAND_PROFILE_DIR, { recursive: true })
+  app.setPath('userData', process.env.ISLAND_PROFILE_DIR)
+}
 const devURL = !app.isPackaged ? process.env.VITE_DEV_SERVER_URL : undefined
 let overlay: BrowserWindow | null = null
 let settings: BrowserWindow | null = null

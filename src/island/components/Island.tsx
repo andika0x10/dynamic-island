@@ -9,7 +9,6 @@ import { useHitTest } from '../hooks/useHitTest.ts'
 import { contentTransition, expandedHeights, islandSizes, islandSpring } from '../motion/presets.ts'
 import { ActivityGlyph, CompactContent, ExpandedContent } from './ActivityContent.tsx'
 import { activityNames } from '../activity/labels.ts'
-import { useTimerSound } from '../../features/timer/useTimerSound.ts'
 import styles from './Island.module.css'
 
 export function Island() {
@@ -18,7 +17,6 @@ export function Island() {
   const reduced = useReducedMotion()
   const { run, error } = useCommand()
   useHitTest()
-  useTimerSound(snapshot.timer, snapshot.preferences.sound)
   const size = expanded ? { ...islandSizes.expanded, height: expandedHeights[primary] } : islandSizes.compact
   const kinds = Array.from(new Set([...activeKinds(snapshot), 'battery' as const, ...(snapshot.preferences.volume ? ['volume' as const] : [])]))
   const low = snapshot.battery.percentage !== null && snapshot.battery.percentage <= 20 && snapshot.battery.charging !== 'charging'

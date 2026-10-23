@@ -12,16 +12,19 @@ export class ActivityService extends EventEmitter {
   private clock: ReturnType<typeof setInterval> | undefined
   private nativeReady = false
   private dismissed = new Set<string>()
+  private alarmPending = false
   constructor(directory: string, executable: string) {
     super()
     this.store = new SettingsStore(directory)
     this.snapshot = { ...initialActivity, ...this.store.load() }
+    this.alarmPending = this.snapshot.timer.status === 'finished' && this.snapshot.preferences.sound
     this.native = new NativeClient(executable, next => {
       this.snapshot = { ...this.snapshot, ...(next ?? disconnected), bridge: next ? 'ready' : 'unavailable' }
       if (this.snapshot.notification && this.dismissed.has(this.snapshot.notification.id)) this.snapshot.notification = null
       if (next && !this.nativeReady) {
         this.nativeReady = true
         void this.native.command({ type: 'preferences', value: this.snapshot.preferences })
+        if (this.alarmPending) { this.alarmPending = false; void this.native.command({ type: 'timer-sound' }) }
       }
       if (!next) this.nativeReady = false
       this.publish()
@@ -33,7 +36,13 @@ export class ActivityService extends EventEmitter {
       const timer = advanceTimer(this.snapshot.timer, Date.now())
       if (timer !== this.snapshot.timer) {
         this.snapshot = { ...this.snapshot, timer }
-        if (timer.status === 'finished') this.persist()
+        if (timer.status === 'finished') {
+          this.persist()
+          if (this.snapshot.preferences.sound) {
+            if (this.nativeReady) void this.native.command({ type: 'timer-sound' })
+            else this.alarmPending = true
+          }
+        }
         this.publish()
       }
     }, 250)
@@ -46,6 +55,7 @@ export class ActivityService extends EventEmitter {
   }
   async command(command: DesktopCommand): Promise<CommandResult> {
     if (command.type.startsWith('timer-')) {
+      this.alarmPending = false
       const action = command.type.slice(6) as 'start' | 'pause' | 'resume' | 'cancel'
       this.snapshot = { ...this.snapshot, timer: transitionTimer(this.snapshot.timer, action, Date.now(), command.type === 'timer-start' ? command.seconds : 0) }
       const result = this.persist(); this.publish(); return result

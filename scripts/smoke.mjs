@@ -6,10 +6,19 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { createServer } from 'vite'
 import { spawn } from 'node:child_process'
 import electronBinary from 'electron'
+import { mkdtemp } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+if (process.argv.includes('--packaged') || process.argv.includes('--native')) {
+  await import('./smoke-desktop.mjs')
+  process.exit(0)
+}
 
 const executablePath = process.argv.includes('--packaged') ? resolve('release/win-unpacked/Dynamic Island.exe') : undefined
 const electronEnv = { ...process.env }
 electronEnv.ISLAND_DISABLE_NATIVE = '1'
+electronEnv.ISLAND_PROFILE_DIR = await mkdtemp(join(tmpdir(), 'dynamic-island-smoke-'))
 delete electronEnv.ELECTRON_RUN_AS_NODE
 delete electronEnv.VITE_DEV_SERVER_URL
 let server

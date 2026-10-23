@@ -80,6 +80,7 @@ internal sealed class BridgeHost : ApplicationContext
                 case "seek": ok = await media.SeekAsync(command.GetProperty("position").GetDouble()); break;
                 case "volume": audio.SetVolume(command.GetProperty("volume").GetSingle()); break;
                 case "mute": audio.SetMute(command.GetProperty("muted").GetBoolean()); break;
+                case "timer-sound": System.Media.SystemSounds.Exclamation.Play(); break;
                 case "notification-access": await notifications.RequestAccessAsync(); ok = notifications.Access == "allowed"; break;
                 case "preferences":
                     var value = command.GetProperty("value");

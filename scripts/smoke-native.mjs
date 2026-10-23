@@ -6,6 +6,7 @@ import { resolve } from 'node:path'
 const child = spawn(resolve('native/WindowsBridge/bin/publish/WindowsBridge.exe'), [], { windowsHide: true, stdio: 'pipe' })
 const lines = createInterface({ input: child.stdout })
 let serial = 0, firstResolve, firstReject
+let latest
 const pending = new Map()
 const first = new Promise((resolve, reject) => { firstResolve = resolve; firstReject = reject })
 child.on('error', firstReject)
@@ -13,7 +14,7 @@ child.stderr.resume()
 lines.on('line', line => {
   try {
     const value = JSON.parse(line)
-    if (value.type === 'snapshot') firstResolve(value)
+    if (value.type === 'snapshot') { latest = value; firstResolve(value) }
     if (value.type === 'result') pending.get(value.id)?.(value)
   } catch (error) { firstReject(error) }
 })
@@ -33,6 +34,8 @@ try {
   assert.equal(snapshot.audio.availability, 'available', 'Expected a real Windows audio endpoint')
   assert.ok(snapshot.audio.volume >= 0 && snapshot.audio.volume <= 1)
   assert.equal(snapshot.notificationAccess, 'requires-package')
+  assert.equal((await command({ type: 'preferences', value: { media: true, volume: true, notifications: false, sound: true } })).ok, true)
+  assert.equal(latest.audio.availability, 'available')
   // Round-trip existing settings without altering the user's volume/mute state.
   assert.equal((await command({ type: 'volume', volume: snapshot.audio.volume })).ok, true)
   assert.equal((await command({ type: 'mute', muted: snapshot.audio.muted })).ok, true)

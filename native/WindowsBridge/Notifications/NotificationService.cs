@@ -37,10 +37,15 @@ public sealed class NotificationService
                 foreach (var notification in notifications.OrderBy(item => item.CreationTime))
                 {
                     if (seen.Contains(notification.Id)) continue;
-                    var binding = notification.Notification.Visual.GetBinding(KnownNotificationBindings.ToastGeneric);
-                    var texts = binding?.GetTextElements().Select(item => item.Text).ToArray() ?? [];
-                    Latest = new NotificationState(notification.Id.ToString(), notification.AppInfo.DisplayInfo.DisplayName,
-                        Limit(texts.FirstOrDefault() ?? "Notifikasi", 300), Limit(string.Join("\n", texts.Skip(1)), 1500), notification.CreationTime.ToUnixTimeMilliseconds());
+                    try
+                    {
+                        var binding = notification.Notification.Visual.GetBinding(KnownNotificationBindings.ToastGeneric);
+                        var texts = binding?.GetTextElements().Select(item => item.Text).ToArray() ?? [];
+                        var created = notification.CreationTime.ToUnixTimeMilliseconds();
+                        Latest = new NotificationState($"{notification.Id}:{created}", notification.AppInfo.DisplayInfo.DisplayName,
+                            Limit(texts.FirstOrDefault() ?? "Notifikasi", 300), Limit(string.Join("\n", texts.Skip(1)), 1500), created);
+                    }
+                    catch { /* One malformed notification must not hide the others. */ }
                 }
             }
             seen.Clear(); seen.UnionWith(ids); initialized = true;

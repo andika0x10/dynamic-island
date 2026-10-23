@@ -20,6 +20,7 @@ export function useIsland(snapshot: ActivitySnapshot) {
     if (notice) setTransient(notice)
     if (pinned === 'timer' && snapshot.timer.status === 'idle') setPinned(null)
     if (pinned === 'media' && (!snapshot.preferences.media || snapshot.media.availability !== 'available')) setPinned(null)
+    if (pinned === 'volume' && !snapshot.preferences.volume) setPinned(null)
     if (!snapshot.notification && transient?.kind === 'notification') setTransient(null)
   }, [snapshot, pinned, transient?.kind])
   const close = () => { setPinned(null); setTransient(null) }

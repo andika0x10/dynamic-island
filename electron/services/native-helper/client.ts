@@ -14,7 +14,9 @@ export class NativeClient {
   private pending = new Map<number, Pending>()
   private restart: ReturnType<typeof setTimeout> | undefined
   private watchdog: ReturnType<typeof setInterval> | undefined
-  constructor(private executable: string, private receive: (snapshot: NativeSnapshot | null) => void) {}
+  private executable: string
+  private receive: (snapshot: NativeSnapshot | null) => void
+  constructor(executable: string, receive: (snapshot: NativeSnapshot | null) => void) { this.executable = executable; this.receive = receive }
   start() {
     if (this.stopped || !existsSync(this.executable)) { this.receive(null); return }
     const child = spawn(this.executable, [], { windowsHide: true, stdio: 'pipe' })
@@ -71,7 +73,7 @@ export class NativeClient {
 }
 
 export const disconnected: NativeSnapshot = { media: emptyMedia, audio: emptyAudio, notificationAccess: 'unavailable', notification: null }
-function validSnapshot(value: NativeSnapshot): boolean {
+export function validSnapshot(value: NativeSnapshot): boolean {
   const media = value.media, audio = value.audio
   const finite = (n: unknown) => typeof n === 'number' && Number.isFinite(n)
   return !!media && ['available', 'unavailable'].includes(media.availability)

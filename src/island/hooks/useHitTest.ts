@@ -6,10 +6,12 @@ export function useHitTest() {
     if (!desktop) return
     let pointer: { x: number; y: number } | null = null
     let frame = 0
+    let ignoring: boolean | undefined
     function update() {
       const focused = document.activeElement?.closest('[data-island]') && document.hasFocus()
       const inside = pointer && document.elementFromPoint(pointer.x, pointer.y)?.closest('[data-island]')
-      desktop!.setClickThrough(!inside && !focused)
+      const next = pointer ? !inside : !focused
+      if (next !== ignoring) { ignoring = next; desktop!.setClickThrough(next) }
     }
     function move(event: PointerEvent) { pointer = { x: event.clientX, y: event.clientY }; update() }
     function leave() { pointer = null; update() }
