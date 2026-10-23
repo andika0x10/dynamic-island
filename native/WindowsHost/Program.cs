@@ -99,7 +99,12 @@ internal sealed class Overlay : Form
         try
         {
             Program.Trace("Creating WebView2 environment");
-            var environment = await CoreWebView2Environment.CreateAsync(null, Path.Combine(profile, "WebView2"));
+            var options = new CoreWebView2EnvironmentOptions();
+            if (Environment.GetEnvironmentVariable("ISLAND_TEST") == "1") {
+                options.AdditionalBrowserArguments = "--remote-debugging-port=9331";
+                Program.Trace("Test debugging port configured explicitly");
+            }
+            var environment = await CoreWebView2Environment.CreateAsync(null, Path.Combine(profile, "WebView2"), options);
             Program.Trace("Creating WebView2 controller");
             await web.EnsureCoreWebView2Async(environment);
             Program.Trace("WebView2 controller ready");
