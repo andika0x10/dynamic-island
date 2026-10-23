@@ -16,11 +16,12 @@ const launch = () => spawn(resolve(executable), [], { windowsHide: true, env: { 
 let child = launch()
 let browser
 async function connect() {
+  let lastError
   for (let i = 0; i < 60; i++) {
     if (child.exitCode !== null) throw new Error(`Host exited ${child.exitCode}`)
-    try { return await chromium.connectOverCDP('http://127.0.0.1:9331') } catch { await delay(500) }
+    try { return await chromium.connectOverCDP('http://127.0.0.1:9331') } catch (error) { lastError = error; await delay(500) }
   }
-  throw new Error('WebView2 debugging endpoint did not start')
+  throw new Error(`WebView2 debugging endpoint did not start: ${lastError}`)
 }
 async function waitExit() {
   for (let i = 0; i < 60; i++) {
@@ -104,6 +105,7 @@ try {
 } catch (error) {
   let diagnostic = String(error.stack ?? error)
   try { diagnostic += '\n' + await readFile(join(profile, 'startup-error.txt'), 'utf8') } catch { }
+  try { diagnostic += '\n' + await readFile(join(profile, 'startup-trace.txt'), 'utf8') } catch { }
   await writeFile('test-results/webview-smoke-error.txt', diagnostic)
   if (process.env.CI) console.error(`::error title=WebView2 smoke::${diagnostic.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A')}`)
   throw error

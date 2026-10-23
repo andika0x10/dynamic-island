@@ -23,8 +23,15 @@ internal static class Program
         if (!first) { Native.PostMessage((IntPtr)0xffff, Native.ShowMessage, IntPtr.Zero, IntPtr.Zero); return 0; }
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
-        Application.Run(new Overlay());
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
+        try { Trace("Creating overlay"); Application.Run(new Overlay()); }
+        catch (Exception error) { Trace(error.ToString()); if (Environment.GetEnvironmentVariable("ISLAND_TEST") != "1") MessageBox.Show(error.Message, "Dynamic Island", MessageBoxButtons.OK, MessageBoxIcon.Error); return 1; }
         return 0;
+    }
+    internal static void Trace(string text)
+    {
+        if (Environment.GetEnvironmentVariable("ISLAND_TEST") != "1") return;
+        try { File.AppendAllText(Path.Combine(Environment.GetEnvironmentVariable("ISLAND_PROFILE_DIR")!, "startup-trace.txt"), DateTime.UtcNow.ToString("O") + " " + text + Environment.NewLine); } catch { }
     }
 }
 
@@ -91,8 +98,11 @@ internal sealed class Overlay : Form
     {
         try
         {
+            Program.Trace("Creating WebView2 environment");
             var environment = await CoreWebView2Environment.CreateAsync(null, Path.Combine(profile, "WebView2"));
+            Program.Trace("Creating WebView2 controller");
             await web.EnsureCoreWebView2Async(environment);
+            Program.Trace("WebView2 controller ready");
             var core = web.CoreWebView2;
             core.Settings.AreDefaultContextMenusEnabled = false;
             core.Settings.AreDevToolsEnabled = Environment.GetEnvironmentVariable("ISLAND_TEST") == "1";
