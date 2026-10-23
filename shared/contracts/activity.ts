@@ -34,7 +34,7 @@ export type DesktopCommand =
   | { type: 'mute'; muted: boolean }
   | { type: 'timer-start'; seconds: number }
   | { type: 'timer-pause' | 'timer-resume' | 'timer-cancel' }
-  | { type: 'notification-access' | 'notification-dismiss' | 'open-settings' }
+  | { type: 'notification-access' | 'notification-dismiss' }
   | { type: 'preferences'; value: Partial<Preferences> }
 
 export type CommandResult = { ok: boolean; error?: string }
@@ -65,7 +65,7 @@ export function isDesktopCommand(value: unknown): value is DesktopCommand {
     case 'preferences': return !!command.value && typeof command.value === 'object' && !Array.isArray(command.value)
       && Object.entries(command.value).every(([key, item]) => ['media', 'volume', 'notifications', 'sound'].includes(key) && typeof item === 'boolean')
     case 'timer-pause': case 'timer-resume': case 'timer-cancel':
-    case 'notification-access': case 'notification-dismiss': case 'open-settings': return true
+    case 'notification-access': case 'notification-dismiss': return true
     default: return false
   }
 }

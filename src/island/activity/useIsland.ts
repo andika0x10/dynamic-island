@@ -18,7 +18,6 @@ export function useIsland(snapshot: ActivitySnapshot) {
     if (snapshot.preferences.notifications && snapshot.notification && before.notification?.id !== snapshot.notification.id) notice = { kind: 'notification', until: Date.now() + 6000 }
     if (before.timer.status !== 'finished' && snapshot.timer.status === 'finished') notice = { kind: 'timer', until: Date.now() + 10000 }
     if (notice) setTransient(notice)
-    if (pinned === 'timer' && snapshot.timer.status === 'idle') setPinned(null)
     if (pinned === 'media' && (!snapshot.preferences.media || snapshot.media.availability !== 'available')) setPinned(null)
     if (pinned === 'volume' && !snapshot.preferences.volume) setPinned(null)
     if (!snapshot.notification && transient?.kind === 'notification') setTransient(null)

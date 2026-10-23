@@ -1,6 +1,6 @@
 import { app, Menu, nativeImage, Tray } from 'electron'
 
-export function createTray(show: () => void, hide: () => void, settings: () => void) {
+export function createTray(show: () => void, hide: () => void) {
   const pixels = Buffer.alloc(16 * 16 * 4)
   for (let y = 4; y < 12; y++) for (let x = 1; x < 15; x++) {
     if ((x === 1 || x === 14) && (y === 4 || y === 11)) continue
@@ -11,7 +11,7 @@ export function createTray(show: () => void, hide: () => void, settings: () => v
   tray.setToolTip('Dynamic Island')
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Tampilkan', click: show }, { label: 'Sembunyikan', click: hide },
-    { label: 'Pengaturan & timer', click: settings }, { type: 'separator' }, { label: 'Keluar', click: () => app.quit() },
+    { type: 'separator' }, { label: 'Keluar', click: () => app.quit() },
   ]))
   tray.on('double-click', show)
   return tray

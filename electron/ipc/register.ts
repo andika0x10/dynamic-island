@@ -3,9 +3,11 @@ import { channels } from '../../shared/desktop.ts'
 import { isDesktopCommand } from '../../shared/contracts/activity.ts'
 import type { ActivityService } from '../services/activities.ts'
 
-export function registerIPC(service: ActivityService, overlay: () => BrowserWindow | null, settings: () => BrowserWindow | null, openSettings: () => Promise<void>) {
-  const trusted = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) =>
-    [overlay(), settings()].some(window => window && !window.isDestroyed() && event.sender === window.webContents && event.senderFrame === window.webContents.mainFrame)
+export function registerIPC(service: ActivityService, overlay: () => BrowserWindow | null) {
+  const trusted = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
+    const window = overlay()
+    return window && !window.isDestroyed() && event.sender === window.webContents && event.senderFrame === window.webContents.mainFrame
+  }
   ipcMain.handle(channels.getBattery, event => {
     if (!trusted(event)) throw new Error('Unauthorized sender')
     return service.snapshot.battery
@@ -17,7 +19,6 @@ export function registerIPC(service: ActivityService, overlay: () => BrowserWind
   ipcMain.handle(channels.command, async (event, command: unknown) => {
     if (!trusted(event) || !isDesktopCommand(command)) return { ok: false, error: 'Perintah tidak valid.' }
     try {
-      if (command.type === 'open-settings') { await openSettings(); return { ok: true } }
       return await service.command(command)
     } catch { return { ok: false, error: 'Perintah gagal. Coba lagi.' } }
   })
@@ -30,7 +31,8 @@ export function registerIPC(service: ActivityService, overlay: () => BrowserWind
     }
   })
   service.on('change', () => {
-    for (const window of [overlay(), settings()]) if (window && !window.isDestroyed()) {
+    const window = overlay()
+    if (window && !window.isDestroyed()) {
       window.webContents.send(channels.activityChanged, service.snapshot)
       window.webContents.send(channels.batteryChanged, service.snapshot.battery)
     }

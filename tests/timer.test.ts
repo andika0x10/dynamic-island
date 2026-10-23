@@ -19,6 +19,6 @@ test('corrupt persisted timer is rejected', () => {
   }
 })
 test('IPC rejects arbitrary commands and unsafe payloads', () => {
-  for (const value of [null, [], { type: 'shell' }, { type: 'volume', volume: 2 }, { type: 'seek', position: NaN }, { type: 'timer-start', seconds: .5 }, { type: 'preferences', value: { admin: true } }]) assert.equal(isDesktopCommand(value), false)
+  for (const value of [null, [], { type: 'open-settings' }, { type: 'shell' }, { type: 'volume', volume: 2 }, { type: 'seek', position: NaN }, { type: 'timer-start', seconds: .5 }, { type: 'preferences', value: { admin: true } }]) assert.equal(isDesktopCommand(value), false)
   for (const value of [{ type: 'timer-start', seconds: 60 }, { type: 'mute', muted: true }, { type: 'preferences', value: { sound: false } }]) assert.equal(isDesktopCommand(value), true)
 })

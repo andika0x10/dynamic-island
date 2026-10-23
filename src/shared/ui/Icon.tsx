@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-export type IconName = 'battery' | 'bolt' | 'music' | 'volume' | 'muted' | 'timer' | 'bell' | 'play' | 'pause' | 'next' | 'previous' | 'close' | 'settings' | 'check'
+export type IconName = 'battery' | 'bolt' | 'music' | 'volume' | 'muted' | 'timer' | 'bell' | 'play' | 'pause' | 'next' | 'previous' | 'close' | 'check'
 const paths: Record<IconName, React.ReactNode> = {
   battery: <><rect x="2" y="6" width="17" height="12" rx="3"/><path d="M22 10v4M5 9h10v6H5z"/></>,
   bolt: <path d="m13 2-8 12h6l-1 8 9-13h-6l1-7Z"/>,
@@ -13,7 +13,6 @@ const paths: Record<IconName, React.ReactNode> = {
   next: <><path d="m3 5 11 7L3 19Zm10 0 9 7-9 7Z" fill="currentColor" stroke="none"/></>,
   previous: <><path d="m21 5-11 7 11 7ZM11 5l-9 7 9 7Z" fill="currentColor" stroke="none"/></>,
   close: <path d="m6 6 12 12M6 18 18 6"/>,
-  settings: <><path d="m9 3-1 3-3 1-2 4 2 3 1 4 4 3 3-1 4-1 3-4-1-3-1-4-4-3-3 1Z"/><circle cx="12" cy="12" r="3"/></>,
   check: <path d="m5 12 5 5L20 7"/>,
 }
 export function Icon({ name, size = 22, style }: { name: IconName; size?: number; style?: CSSProperties }) {

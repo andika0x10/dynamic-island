@@ -12,12 +12,12 @@ npm run build:native
 npm run dev
 ```
 
-Build native mencari SDK pada `.tools/dotnet/dotnet.exe`, lalu `dotnet` di PATH. Gunakan `DOTNET_EXECUTABLE` untuk lokasi lain. `npm run dev` mengelola Vite/HMR dan restart Electron; setelah mengubah C#, jalankan ulang build native dan Electron. Tray menyediakan Tampilkan, Sembunyikan, Pengaturan & timer, dan Keluar.
+Build native mencari SDK pada `.tools/dotnet/dotnet.exe`, lalu `dotnet` di PATH. Gunakan `DOTNET_EXECUTABLE` untuk lokasi lain. `npm run dev` mengelola Vite/HMR dan restart Electron; setelah mengubah C#, jalankan ulang build native dan Electron. Tray menyediakan Tampilkan, Sembunyikan, dan Keluar. Timer tersedia melalui tab Timer di dalam Dynamic Island.
 
 | Perintah | Fungsi |
 | --- | --- |
 | `npm run dev` | Overlay Electron, Vite strict port 5173 |
-| `npm run dev:web` | Preview browser tanpa data Windows; `/#settings` untuk pengaturan |
+| `npm run dev:web` | Preview browser tanpa data Windows |
 | `npm run typecheck` | Pemeriksaan tipe renderer/main/preload |
 | `npm run lint` | Oxlint |
 | `npm test` | Baterai, timer, pemilihan aktivitas, validasi IPC/protokol |
@@ -34,13 +34,29 @@ Build native mencari SDK pada `.tools/dotnet/dotnet.exe`, lalu `dotnet` di PATH.
 
 Jalankan `release/win-unpacked/Dynamic Island.exe` bersama seluruh isi foldernya. Tidak ada autostart atau auto-update. Preview browser tidak mengarang persentase baterai atau lagu. Fixture media/notifikasi hanya dipakai untuk pengujian.
 
+## Distribusi melalui GitHub Actions
+
+Workflow **Windows build and release** berjalan pada push ke `master`/`main`, pull request, tag `v*`, atau melalui **Actions → Run workflow**. Runner Windows memakai Node.js 24 dan .NET 10, menjalankan lint, unit test, build, dan smoke UI Electron. Hasil installer x64 `.exe`, ZIP, dan `SHA256SUMS.txt` tersedia pada artifact **dynamic-island-windows-x64** selama 14 hari. Screenshot UI disimpan terpisah selama 7 hari.
+
+Untuk rilis publik, ubah versi `package.json` dan lockfile melalui `npm version patch --no-git-tag-version` (atau `minor`/`major`), commit perubahan versi, lalu push commit dan tag yang sesuai:
+
+```sh
+git push origin master
+git tag v0.1.1
+git push origin v0.1.1
+```
+
+Tag harus sama dengan `v` + versi `package.json`. Setelah seluruh pemeriksaan lulus, workflow menerbitkan GitHub Release berisi installer, ZIP, checksum, dan release notes otomatis. Tag dengan suffix seperti `v0.2.0-beta.1` diterbitkan sebagai prerelease. Publikasi menggunakan `GITHUB_TOKEN` bawaan; tidak memerlukan personal access token. Push biasa dan run manual hanya menghasilkan artifact.
+
+Pengguna dapat memasang installer atau mengekstrak seluruh ZIP lalu menjalankan `Dynamic Island.exe`. Distribusi ini belum ditandatangani dan Windows dapat menampilkan SmartScreen. Installer/ZIP tidak menyediakan identitas MSIX untuk izin notifikasi. MSIX tetap dibuat melalui alur terpisah di bawah. Build distribusi lokal: `npm run dist:win`. CI tidak menjalankan pengujian audio/media perangkat asli; pengujian tersebut tetap dilakukan pada Windows lokal.
+
 ## Aktivitas dan interaksi
 
 - **Baterai:** pembacaan CIM saat startup, setiap 30 detik, perubahan AC/baterai, dan resume. Detail charger muncul empat detik. AC tidak selalu berarti charging; firmware dapat melaporkan status tidak diketahui. Tanpa baterai dibedakan dari gagal baca.
 - **Musik:** metadata, artwork lokal, timeline, previous/play/pause/next, dan seek dari sesi media aktif Windows (GSMTC). Aplikasi pemutar harus mengekspos sesi media; kontrol hanya aktif jika didukung sesi tersebut. Waveform merupakan animasi status pemutaran, bukan pengukuran audio.
 - **Volume:** volume master dan mute output default multimedia Windows melalui Core Audio. Perubahan dari keyboard/aplikasi lain memunculkan indikator tiga detik. Output audio dicari ulang setiap pembacaan agar perpindahan perangkat tertangani. Slider mengirim nilai saat dilepas atau sesudah input keyboard.
-- **Timer:** buat dari pengaturan; jeda, lanjutkan, batalkan, dan konfirmasi selesai melalui expanded. Deadline ditangani main process, dipersistenkan, serta dihitung ulang setelah sleep/restart. Bunyi selesai menggunakan suara sistem Windows, mengikuti pengaturan suara OS. Tidak membangunkan komputer yang tidur.
-- **Notifikasi:** memerlukan MSIX terpasang dan izin Windows yang diberikan melalui tombol di pengaturan. Fitur dapat dimatikan secara terpisah. Pembacaan pertama menjadi baseline; riwayat lama tidak diputar ulang. Notifikasi terbaru tampil enam detik. Menutup tampilan tidak menghapus notifikasi asli Windows. Isi tidak ditulis ke log atau penyimpanan aplikasi.
+- **Timer:** buat dari tab Timer di dalam island; jeda, lanjutkan, batalkan, dan konfirmasi selesai melalui expanded. Deadline ditangani main process, dipersistenkan, serta dihitung ulang setelah sleep/restart. Bunyi selesai menggunakan suara sistem Windows, mengikuti pengaturan suara OS. Tidak membangunkan komputer yang tidur.
+- **Notifikasi:** memerlukan MSIX terpasang dan izin Windows. UI settings telah dihapus; notifikasi nonaktif secara default dan belum memiliki kontrol izin di UI saat ini. Pembacaan pertama menjadi baseline; riwayat lama tidak diputar ulang. Notifikasi terbaru tampil enam detik. Menutup tampilan tidak menghapus notifikasi asli Windows. Isi tidak ditulis ke log atau penyimpanan aplikasi.
 
 Klik pill/bubble untuk membuka aktivitas; klik header atau Escape saat window fokus untuk menutup. Kontrol di dalam panel tidak menutupnya. Pilih aktivitas lain melalui tombol di bagian bawah. Detail yang dibuka manual dipertahankan ketika ada event baru. Ketika tertutup, timer selesai mendapat prioritas, lalu notifikasi, volume, dan charger; sesudahnya kembali ke media/timer aktif dengan baterai sebagai fallback. Maksimal dua aktivitas terlihat sekaligus.
 
@@ -50,9 +66,9 @@ Canvas maksimum 460 × 320 DIP, 12 DIP di bawah work area monitor utama. Compact
 
 | Modul | Tanggung jawab |
 | --- | --- |
-| `src/App.tsx` | Komposisi overlay/pengaturan saja |
+| `src/App.tsx` | Komposisi overlay |
 | `src/island` | Shell, prioritas aktivitas, animasi, hit-testing |
-| `src/features` | UI baterai, media, volume, timer, notifikasi, pengaturan |
+| `src/features` | UI baterai, media, volume, timer, notifikasi |
 | `src/platform` | Adapter desktop/browser dan subscription snapshot |
 | `src/shared` | UI dasar, hook umum, formatting, token global |
 | `shared/contracts` | Snapshot, capability, command, dan validasi |
@@ -64,7 +80,7 @@ Canvas maksimum 460 × 320 DIP, 12 DIP di bawah work area monitor utama. Compact
 
 Fitur renderer tidak mengakses Node/OS atau internal fitur lain. Shell menyusun fitur melalui kontrak bersama. CSS Modules mengisolasi style, sedangkan warna dan tipografi dasar berada pada global tokens. Renderer memakai context isolation, sandbox, dan tanpa Node integration. Navigasi, popup, dan permission browser ditolak.
 
-API `window.desktop` mempertahankan `getBattery`, `onBattery`, dan `setClickThrough`; menambahkan `getActivity`, `onActivity`, serta `command`. Subscription mengembalikan unsubscribe. Command dibatasi pada media/seek, volume/mute, timer, preferensi, izin/tutup notifikasi, dan pengaturan. Main process memvalidasi pengirim main frame serta payload. Tidak tersedia shell atau IPC generik untuk renderer.
+API `window.desktop` mempertahankan `getBattery`, `onBattery`, dan `setClickThrough`; menambahkan `getActivity`, `onActivity`, serta `command`. Subscription mengembalikan unsubscribe. Command dibatasi pada media/seek, volume/mute, timer, preferensi, izin/tutup notifikasi. Main process memvalidasi pengirim main frame serta payload. Tidak tersedia shell atau IPC generik untuk renderer.
 
 Helper berkomunikasi melalui JSON per baris di stdin/stdout tanpa port jaringan. Polling native berjalan setiap 500 ms tanpa pembacaan bertumpuk. Command memiliki ID dan timeout; kegagalan proses membatalkan command, mengosongkan data native, dan mencoba restart maksimal tiga kali. Watchdog menghentikan helper yang tidak merespons selama 20 detik. Baterai dan timer tetap berjalan saat helper tidak tersedia.
 
@@ -87,7 +103,7 @@ Skrip memakai sertifikat yang disediakan, tidak membuat sertifikat, mengubah tru
 
 ## Validasi dan batas verifikasi
 
-Unit test mencakup normalisasi baterai, timer pause/resume/restart/sleep, data persisten rusak, prioritas/manual pin, expiry, command tidak valid, helper hilang, dan snapshot native rusak. Smoke UI mengambil screenshot compact, expanded, dua aktivitas, musik, timer, dan pengaturan; memeriksa Escape, reduced motion, transparansi, hit-test sudut, IPC, dan single instance. Regresi layout memeriksa overflow, kontrol terpotong, dan jarak konten ke navigasi; mencakup baterai 100%, nama perangkat panjang, pesan error, serta window lebar 460/360 DIP. Screenshot disimpan di `test-results`.
+Unit test mencakup normalisasi baterai, timer pause/resume/restart/sleep, data persisten rusak, prioritas/manual pin, expiry, command tidak valid, helper hilang, dan snapshot native rusak. Smoke UI mengambil screenshot compact, expanded, dua aktivitas, musik, dan timer; memeriksa Escape, reduced motion, transparansi, hit-test sudut, IPC, dan single instance. Regresi layout memeriksa overflow, kontrol terpotong, dan jarak konten ke navigasi; mencakup baterai 100%, nama perangkat panjang, pesan error, serta window lebar 460/360 DIP. Screenshot disimpan di `test-results`.
 
 Native smoke menggunakan nilai volume/mute yang sedang berlaku sehingga tidak sengaja mengubah preferensi audio. Smoke desktop memakai profil terpisah dan menonaktifkan bunyi pengujian timer. Pembacaan media dapat unavailable jika tidak ada sesi pemutar; pembacaan audio memerlukan perangkat output.
 

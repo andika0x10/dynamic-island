@@ -1,7 +1,6 @@
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { useReducedMotion } from '../../shared/hooks/useReducedMotion.ts'
 import { useActivity } from '../../platform/desktop.ts'
-import { useCommand } from '../../shared/hooks/useCommand.ts'
 import { Icon } from '../../shared/ui/Icon.tsx'
 import { useIsland } from '../activity/useIsland.ts'
 import { activeKinds } from '../activity/select.ts'
@@ -16,11 +15,10 @@ export function Island() {
   const snapshot = useActivity()
   const { primary, secondary, expanded, open, close } = useIsland(snapshot)
   const reduced = useReducedMotion()
-  const { run, error } = useCommand()
   useHitTest()
   const { height: panelHeight, measure } = usePanelHeight(primary)
   const size = expanded ? { ...islandSizes.expanded, height: panelHeight } : islandSizes.compact
-  const kinds = Array.from(new Set([...activeKinds(snapshot), 'battery' as const, ...(snapshot.preferences.volume ? ['volume' as const] : [])]))
+  const kinds = Array.from(new Set([...activeKinds(snapshot), 'battery' as const, 'timer' as const, ...(snapshot.preferences.volume ? ['volume' as const] : [])]))
   const low = snapshot.battery.percentage !== null && snapshot.battery.percentage <= 20 && snapshot.battery.charging !== 'charging'
   return <MotionConfig reducedMotion="user"><main className={styles.overlay}>
     <div className={styles.cluster}>
@@ -35,8 +33,7 @@ export function Island() {
             <div ref={measure} data-panel-body className={styles.panelBody}><ExpandedContent kind={primary} snapshot={snapshot}/></div>
           </motion.div>}
         </AnimatePresence>
-        {expanded && <nav className={styles.navigation} aria-label="Aktivitas">{kinds.map(kind => <button type="button" key={kind} aria-label={activityNames[kind]} aria-pressed={kind === primary} onClick={() => open(kind)}><ActivityGlyph kind={kind} snapshot={snapshot}/></button>)}<button type="button" aria-label="Buka pengaturan" onClick={() => void run({ type: 'open-settings' })}><Icon name="settings" size={17}/></button></nav>}
-        {error && expanded && <p className={styles.error} role="alert">{error}</p>}
+        {expanded && <nav className={styles.navigation} aria-label="Aktivitas">{kinds.map(kind => <button type="button" key={kind} aria-label={activityNames[kind]} aria-pressed={kind === primary} onClick={() => open(kind)}><ActivityGlyph kind={kind} snapshot={snapshot}/></button>)}</nav>}
       </motion.section>
       <AnimatePresence initial={false}>{secondary && !expanded && <motion.button data-island data-secondary type="button" key={secondary} className={`${styles.bubble} ${styles[secondary]}`} aria-label={`Buka ${activityNames[secondary]}`} onClick={() => open(secondary)} initial={{ opacity: 0, scale: .6, x: -8 }} animate={{ opacity: 1, scale: 1, x: 0 }} exit={{ opacity: 0, scale: .6, x: -8 }} transition={reduced ? { duration: 0 } : islandSpring}><ActivityGlyph kind={secondary} snapshot={snapshot}/></motion.button>}</AnimatePresence>
     </div>

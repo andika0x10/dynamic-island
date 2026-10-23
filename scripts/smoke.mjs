@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, rmdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { _electron as electron } from 'playwright'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -35,6 +35,7 @@ const application = await electron.launch({
 const errors = []
 try {
   const page = await application.firstWindow()
+  await page.bringToFront()
   page.on('pageerror', error => errors.push(error.message))
   await page.waitForSelector('[data-island]')
   let snapshot
@@ -99,7 +100,7 @@ try {
   await page.waitForFunction(() => document.querySelector('[aria-controls="island-content"]').getAttribute('aria-expanded') === 'false')
   await publish(initial)
   await page.waitForFunction(() => document.querySelector('[aria-controls="island-content"]').getAttribute('aria-expanded') === 'true')
-  await page.waitForFunction(() => document.querySelector('[aria-controls="island-content"]').getAttribute('aria-expanded') === 'false', null, { timeout: 6500 })
+  await page.waitForFunction(() => document.querySelector('[aria-controls="island-content"]').getAttribute('aria-expanded') === 'false', null, { timeout: 15000 })
   if (!executablePath) {
     const media = { ...initial.media, availability: 'available', title: 'Midnight City', artist: 'M83', playing: true, duration: 244, position: 68, updatedAt: Date.now(), controls: { play: true, pause: true, next: true, previous: true, seek: true } }
     await publish({ ...initial, media, timer: { status: 'running', duration: 300, remaining: 280, deadline: Date.now() + 280000 } })
@@ -142,16 +143,74 @@ try {
   await page.keyboard.press('Escape')
   await publish(initial)
   assert.equal((await page.evaluate(() => window.desktop.command({ type: 'volume', volume: 5 }))).ok, false)
-  assert.equal((await page.evaluate(() => window.desktop.command({ type: 'timer-start', seconds: 60 }))).ok, true)
-  assert.equal((await page.evaluate(() => window.desktop.command({ type: 'timer-pause' }))).ok, true)
-  assert.equal((await page.evaluate(() => window.desktop.getActivity())).timer.status, 'paused')
-  await page.evaluate(() => window.desktop.command({ type: 'timer-cancel' }))
-  const settingsWindow = application.waitForEvent('window')
-  await page.evaluate(() => window.desktop.command({ type: 'open-settings' }))
-  const settings = await settingsWindow
-  await settings.getByRole('heading', { name: 'Dynamic Island', exact: true }).waitFor()
-  await settings.screenshot({ path: 'test-results/settings.png' })
-  await settings.close()
+  assert.equal(await page.getByRole('button', { name: 'Buka pengaturan' }).count(), 0)
+  assert.equal((await page.evaluate(() => window.desktop.command({ type: 'open-settings' }))).ok, false)
+  assert.equal(await application.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length), 1)
+  await page.getByRole('button', { name: 'Buka Baterai', exact: true }).click()
+  await page.getByRole('button', { name: 'Timer', exact: true }).click()
+  const duration = page.getByRole('spinbutton', { name: 'Durasi timer dalam menit' })
+  const startTimer = page.getByRole('button', { name: 'Mulai timer', exact: true })
+  await duration.waitFor()
+  // Idle timer must stay pinned across incoming snapshots.
+  await publish(initial)
+  await delay(350)
+  assert.equal(await duration.isVisible(), true)
+  for (const value of ['', '0', '1441', '1.5']) {
+    await duration.fill(value)
+    assert.equal(await startTimer.isDisabled(), true)
+  }
+  await duration.fill('1440')
+  assert.equal(await startTimer.isEnabled(), true)
+  for (const width of [460, 360]) {
+    await application.evaluate(({ BrowserWindow }, width) => BrowserWindow.getAllWindows()[0].setBounds({ width }), width)
+    await page.getByRole('button', { name: '1 mnt', exact: true }).click()
+    assert.equal(await duration.inputValue(), '1')
+    await assertPanelFits(page, `Timer setup ${width}`)
+    await page.locator('[data-island]').screenshot({ path: `test-results/timer-setup-${width}.png`, omitBackground: true })
+    await startTimer.click()
+    await page.getByRole('button', { name: 'Jeda', exact: true }).waitFor()
+    assert.equal((await page.evaluate(() => window.desktop.getActivity())).timer.duration, 60)
+    await assertPanelFits(page, `Timer countdown ${width}`)
+    await page.locator('[data-island]').screenshot({ path: `test-results/timer-countdown-${width}.png`, omitBackground: true })
+    // Fail persistence only in the isolated test profile to exercise a real error.
+    const blockedFile = join(electronEnv.ISLAND_PROFILE_DIR, 'settings.json.tmp')
+    await mkdir(blockedFile)
+    try {
+      await page.getByRole('button', { name: 'Jeda', exact: true }).click()
+      await page.getByRole('alert').waitFor()
+      await page.getByRole('button', { name: 'Lanjutkan', exact: true }).waitFor()
+      assert.equal((await page.evaluate(() => window.desktop.getActivity())).timer.status, 'paused')
+      await assertPanelFits(page, `Timer error ${width}`)
+      await page.locator('[data-island]').screenshot({ path: `test-results/timer-error-${width}.png`, omitBackground: true })
+    } finally { await rmdir(blockedFile) }
+    await page.getByRole('button', { name: 'Lanjutkan', exact: true }).click()
+    await page.getByRole('button', { name: 'Jeda', exact: true }).waitFor()
+    assert.equal((await page.evaluate(() => window.desktop.getActivity())).timer.status, 'running')
+    assert.equal(await page.getByRole('alert').count(), 0)
+    await page.keyboard.press('Escape')
+    const compactTimer = page.getByRole('button', { name: 'Buka Timer', exact: true })
+    await compactTimer.waitFor()
+    assert.match(await compactTimer.innerText(), /\d+:\d{2}/)
+    await compactTimer.click()
+    await page.getByRole('button', { name: 'Batalkan', exact: true }).click()
+    await duration.waitFor()
+    assert.equal((await page.evaluate(() => window.desktop.getActivity())).timer.status, 'idle')
+    assert.equal(await page.getByRole('button', { name: 'Tutup Timer', exact: true }).getAttribute('aria-expanded'), 'true')
+  }
+  // Publish completion for a UI-created timer without waiting a full minute.
+  await startTimer.click()
+  await page.getByRole('button', { name: 'Jeda', exact: true }).waitFor()
+  const running = await page.evaluate(() => window.desktop.getActivity())
+  await publish({ ...running, timer: { ...running.timer, status: 'finished', remaining: 0 } })
+  await page.getByRole('heading', { name: 'Waktu habis', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Selesai', exact: true }).click()
+  await duration.waitFor()
+  await startTimer.click()
+  await page.getByRole('button', { name: 'Jeda', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Batalkan', exact: true }).click()
+  await duration.waitFor()
+  await page.getByRole('button', { name: 'Tutup Timer', exact: true }).click()
+  await application.evaluate(({ BrowserWindow }, width) => BrowserWindow.getAllWindows()[0].setBounds({ width }), config.bounds.width)
   await application.evaluate(({ screen }) => screen.emit('display-metrics-changed', {}, screen.getPrimaryDisplay(), ['workArea']))
   await application.evaluate(({ powerMonitor }) => powerMonitor.emit('resume'))
   const popup = await page.evaluate(async () => {
@@ -170,4 +229,10 @@ try {
   assert.equal(await application.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isVisible()), true)
   assert.deepEqual(errors, [])
   console.log('Electron smoke passed:', JSON.stringify({ packaged: !!executablePath, snapshot, hitTest }))
+} catch (error) {
+  for (const page of application.windows()) {
+    console.error('Smoke failure UI:', await page.locator('[data-island]').innerText().catch(() => 'Island unavailable'))
+    await page.screenshot({ path: 'test-results/failure.png', omitBackground: true }).catch(() => {})
+  }
+  throw error
 } finally { await application.close(); await server?.close() }

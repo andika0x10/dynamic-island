@@ -15,29 +15,17 @@ if (process.env.ISLAND_PROFILE_DIR) {
 }
 const devURL = !app.isPackaged ? process.env.VITE_DEV_SERVER_URL : undefined
 let overlay: BrowserWindow | null = null
-let settings: BrowserWindow | null = null
 let tray: Tray | undefined
 let activities: ActivityService | undefined
 let stopBattery: (() => void) | undefined
 
-async function load(window: BrowserWindow, hash = '') {
+async function load(window: BrowserWindow) {
   if (devURL) {
     if (devURL !== 'http://127.0.0.1:5173') throw new Error('Unexpected dev server URL')
-    await window.loadURL(`${devURL}/${hash}`)
-  } else await window.loadFile(join(directory, '../dist/index.html'), { hash: hash.replace('#', '') })
+    await window.loadURL(`${devURL}/`)
+  } else await window.loadFile(join(directory, '../dist/index.html'))
 }
 function showOverlay() { overlay?.showInactive() }
-async function openSettings() {
-  if (settings && !settings.isDestroyed()) { settings.show(); settings.focus(); return }
-  settings = new BrowserWindow({ width: 600, height: 740, minWidth: 440, minHeight: 580,
-    title: 'Dynamic Island — Pengaturan', backgroundColor: '#161618', autoHideMenuBar: true, show: false,
-    webPreferences: { preload: join(directory, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false },
-  })
-  secureWindow(settings)
-  settings.once('ready-to-show', () => settings?.show())
-  settings.on('closed', () => { settings = null })
-  await load(settings, '#settings')
-}
 async function createOverlay() {
   overlay = new BrowserWindow({ ...canvas, frame: false, transparent: true, backgroundColor: '#00000000',
     alwaysOnTop: true, skipTaskbar: true, resizable: false, maximizable: false, minimizable: false,
@@ -59,9 +47,9 @@ else {
     const helper = app.isPackaged ? join(process.resourcesPath, 'native', 'WindowsBridge.exe') : join(directory, '../native/WindowsBridge/bin/publish/WindowsBridge.exe')
     const helperPath = !app.isPackaged && process.env.ISLAND_DISABLE_NATIVE === '1' ? '' : helper
     activities = new ActivityService(app.getPath('userData'), helperPath)
-    registerIPC(activities, () => overlay, () => settings, openSettings)
+    registerIPC(activities, () => overlay)
     await createOverlay()
-    tray = createTray(showOverlay, () => overlay?.hide(), () => { void openSettings() })
+    tray = createTray(showOverlay, () => overlay?.hide())
     const position = () => { if (overlay) positionOverlay(overlay) }
     screen.on('display-added', position)
     screen.on('display-removed', position)

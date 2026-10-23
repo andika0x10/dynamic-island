@@ -19,7 +19,8 @@
     "test:native": "node scripts/smoke-native.mjs",
     "test:smoke": "node scripts/smoke.mjs",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dist:win": "npm run build && electron-builder --win nsis zip --x64 --publish never"
   },
   "build": {
     "appId": "com.andika.dynamicisland",
@@ -37,7 +38,14 @@
     "extraResources": [{ "from": "native/WindowsBridge/bin/publish", "to": "native", "filter": ["**/*", "!**/*.pdb"] }],
     "win": {
       "signAndEditExecutable": false
-    }
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Dynamic-Island-${version}-${arch}-setup.${ext}"
+    },
+    "artifactName": "Dynamic-Island-${version}-${arch}.${ext}"
   },
   "dependencies": {
     "motion": "^14.6.0",
