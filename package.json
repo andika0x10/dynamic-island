@@ -1,0 +1,60 @@
+{
+  "name": "dynamic-island",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist-electron/main.js",
+  "description": "Dynamic Island battery overlay for Windows",
+  "author": "Andika",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "vite",
+    "typecheck": "tsc -b && tsc -p tsconfig.electron.json",
+    "build": "npm run typecheck && vite build && node scripts/build-electron.mjs",
+    "start": "node scripts/start.mjs",
+    "pack": "npm run build && electron-builder --win --dir",
+    "test": "node --test tests/battery.test.ts",
+    "test:smoke": "node scripts/smoke.mjs",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "build": {
+    "appId": "com.andika.dynamicisland",
+    "productName": "Dynamic Island",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/*.js",
+      "dist-electron/*.cjs",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "signAndEditExecutable": false
+    }
+  },
+  "dependencies": {
+    "motion": "^14.6.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@rolldown/plugin-babel": "^0.2.4",
+    "@types/babel__core": "^7.20.5",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "electron": "^45.0.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "oxlint": "^1.88.0",
+    "playwright": "^1.64.1",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.4"
+  }
+}
