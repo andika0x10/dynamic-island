@@ -41,7 +41,7 @@ Workflow **Windows build and release** berjalan pada push ke `master`/`main`, pu
 Untuk rilis publik, ubah versi `package.json` dan lockfile melalui `npm version patch --no-git-tag-version` (atau `minor`/`major`), commit perubahan versi, lalu push commit dan tag yang sesuai:
 
 ```sh
-git push origin master
+git push origin main
 git tag v0.1.1
 git push origin v0.1.1
 ```
