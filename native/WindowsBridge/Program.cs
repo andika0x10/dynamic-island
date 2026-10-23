@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Runtime.InteropServices;
 using WindowsBridge.Audio;
 using WindowsBridge.Media;
 using WindowsBridge.Notifications;
@@ -14,30 +15,28 @@ internal static class Program
     {
         Console.InputEncoding = new UTF8Encoding(false);
         Console.OutputEncoding = new UTF8Encoding(false);
-        ApplicationConfiguration.Initialize();
-        using var host = new BridgeHost();
-        Application.Run(host);
+        using var loop = new WindowsMessageLoop();
+        using var host = new BridgeHost(loop);
+        loop.Run();
     }
 }
 
-internal sealed class BridgeHost : ApplicationContext
+internal sealed class BridgeHost : IDisposable
 {
     private readonly MediaService media = new();
     private readonly AudioService audio = new();
     private readonly NotificationService notifications = new();
-    private readonly System.Windows.Forms.Timer timer = new() { Interval = 500 };
-    private readonly Control dispatcher = new();
-    private readonly JsonSerializerOptions json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private readonly System.Threading.Timer timer;
+    private readonly WindowsMessageLoop dispatcher;
     private bool polling;
     private bool mediaEnabled = true;
     private bool audioEnabled = true;
     private bool stopped;
 
-    public BridgeHost()
+    public BridgeHost(WindowsMessageLoop dispatcher)
     {
-        dispatcher.CreateControl();
-        timer.Tick += async (_, _) => await PollAsync();
-        timer.Start();
+        this.dispatcher = dispatcher;
+        timer = new System.Threading.Timer(_ => dispatcher.Post(async _ => await PollAsync(), null), null, 500, 500);
         _ = Task.Run(ReadCommandsAsync);
     }
     private async Task PollAsync()
@@ -62,11 +61,11 @@ internal sealed class BridgeHost : ApplicationContext
                 if (line.Length > 16000) continue;
                 using var document = JsonDocument.Parse(line);
                 var command = document.RootElement.Clone();
-                dispatcher.BeginInvoke(async () => await ExecuteAsync(command));
+                dispatcher.Post(async _ => await ExecuteAsync(command), null);
             }
         }
         catch { /* Broken pipe or malformed input: stop with the parent. */ }
-        finally { if (!dispatcher.IsDisposed) dispatcher.BeginInvoke(() => ExitThread()); }
+        finally { dispatcher.Post(_ => Stop(), null); }
     }
     private async Task ExecuteAsync(JsonElement command)
     {
@@ -80,7 +79,7 @@ internal sealed class BridgeHost : ApplicationContext
                 case "seek": ok = await media.SeekAsync(command.GetProperty("position").GetDouble()); break;
                 case "volume": audio.SetVolume(command.GetProperty("volume").GetSingle()); break;
                 case "mute": audio.SetMute(command.GetProperty("muted").GetBoolean()); break;
-                case "timer-sound": System.Media.SystemSounds.Exclamation.Play(); break;
+                case "timer-sound": MessageBeep(0x30); break;
                 case "notification-access": await notifications.RequestAccessAsync(); ok = notifications.Access == "allowed"; break;
                 case "preferences":
                     var value = command.GetProperty("value");
@@ -91,16 +90,17 @@ internal sealed class BridgeHost : ApplicationContext
                 default: ok = false; break;
             }
             await PollAsync();
-            Write(new { type = "result", id, ok, error = ok ? null : "Windows tidak mendukung tindakan ini atau izin belum diberikan." });
+            Write(new BridgeResult(id, ok, ok ? null : "Windows tidak mendukung tindakan ini atau izin belum diberikan."));
         }
-        catch { Write(new { type = "result", id, ok = false, error = "Integrasi Windows belum tersedia untuk tindakan ini." }); }
+        catch { Write(new BridgeResult(id, false, "Integrasi Windows belum tersedia untuk tindakan ini.")); }
     }
     private void Write<T>(T value)
     {
         if (stopped) return;
-        try { Console.WriteLine(JsonSerializer.Serialize(value, json)); }
-        catch { ExitThread(); }
+        try { Console.WriteLine(JsonSerializer.Serialize(value, typeof(T), BridgeJsonContext.Default)); }
+        catch { Stop(); }
     }
-    protected override void ExitThreadCore() { stopped = true; timer.Stop(); base.ExitThreadCore(); }
-    protected override void Dispose(bool disposing) { if (disposing) { stopped = true; timer.Dispose(); dispatcher.Dispose(); } base.Dispose(disposing); }
+    private void Stop() { stopped = true; timer.Change(Timeout.Infinite, Timeout.Infinite); dispatcher.Stop(); }
+    public void Dispose() { stopped = true; timer.Dispose(); }
+    [DllImport("user32.dll")] private static extern bool MessageBeep(uint type);
 }

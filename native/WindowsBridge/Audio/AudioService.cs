@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 using WindowsBridge.Protocol;
 
 namespace WindowsBridge.Audio;
@@ -13,6 +14,11 @@ public sealed class AudioService
     public void SetVolume(float value) => WithEndpoint((volume, _) => { volume.SetMasterVolumeLevelScalar(Math.Clamp(value, 0, 1), Guid.Empty); return true; });
     public void SetMute(bool value) => WithEndpoint((volume, _) => { volume.SetMute(value, Guid.Empty); return true; });
 
+    // COM dispatch uses declaration order: retain even the unused vtable slots.
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IMMDeviceEnumerator))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IMMDevice))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IAudioEndpointVolume))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IPropertyStore))]
     private static T WithEndpoint<T>(Func<IAudioEndpointVolume, string, T> operation)
     {
         var enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();

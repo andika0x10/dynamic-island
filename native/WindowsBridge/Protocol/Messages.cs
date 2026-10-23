@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace WindowsBridge.Protocol;
 
 public record Controls(bool Play = false, bool Pause = false, bool Previous = false, bool Next = false, bool Seek = false);
@@ -12,3 +14,12 @@ public record BridgeSnapshot(MediaState Media, AudioState Audio, string Notifica
 {
     public string Type => "snapshot";
 }
+public record BridgeResult(long Id, bool Ok, string? Error)
+{
+    public string Type => "result";
+}
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(BridgeSnapshot))]
+[JsonSerializable(typeof(BridgeResult))]
+internal partial class BridgeJsonContext : JsonSerializerContext;

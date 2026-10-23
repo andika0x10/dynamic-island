@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
 import { resolve } from 'node:path'
 
+const protocolOnly = process.argv.includes('--protocol-only')
 const child = spawn(resolve('native/WindowsBridge/bin/publish/WindowsBridge.exe'), [], { windowsHide: true, stdio: 'pipe' })
 const lines = createInterface({ input: child.stdout })
 let serial = 0, firstResolve, firstReject
@@ -31,15 +32,22 @@ async function command(command) {
 try {
   const snapshot = await first
   assert.ok(['available', 'unavailable'].includes(snapshot.media.availability))
-  assert.equal(snapshot.audio.availability, 'available', 'Expected a real Windows audio endpoint')
+  assert.ok(['available', 'unavailable'].includes(snapshot.audio.availability))
+  if (!protocolOnly) assert.equal(snapshot.audio.availability, 'available', 'Expected a real Windows audio endpoint')
   assert.ok(snapshot.audio.volume >= 0 && snapshot.audio.volume <= 1)
   assert.equal(snapshot.notificationAccess, 'requires-package')
   assert.equal((await command({ type: 'preferences', value: { media: true, volume: true, notifications: false, sound: true } })).ok, true)
-  assert.equal(latest.audio.availability, 'available')
+  if (!protocolOnly) assert.equal(latest.audio.availability, 'available')
   // Round-trip existing settings without altering the user's volume/mute state.
-  assert.equal((await command({ type: 'volume', volume: snapshot.audio.volume })).ok, true)
-  assert.equal((await command({ type: 'mute', muted: snapshot.audio.muted })).ok, true)
+  if (!protocolOnly) {
+    assert.equal((await command({ type: 'volume', volume: snapshot.audio.volume })).ok, true)
+    assert.equal((await command({ type: 'mute', muted: snapshot.audio.muted })).ok, true)
+  }
   assert.equal((await command({ type: 'invalid-command' })).ok, false)
+  assert.equal((await command({ type: 'notification-access' })).ok, false)
+  // Exercise concurrent dispatch/async continuations on the lightweight STA loop.
+  const results = await Promise.all(Array.from({ length: 16 }, () => command({ type: 'invalid-command' })))
+  assert.ok(results.every(value => value.ok === false && typeof value.error === 'string'))
   console.log('Native smoke passed:', JSON.stringify({ audio: snapshot.audio.availability, media: snapshot.media.availability, notifications: snapshot.notificationAccess }))
 } finally {
   clearTimeout(deadline)
@@ -48,4 +56,5 @@ try {
   const timeout = setTimeout(() => child.kill(), 3000)
   await new Promise(resolve => child.exitCode !== null ? resolve() : child.once('exit', resolve))
   clearTimeout(timeout)
+  assert.equal(child.exitCode, 0, 'Helper must exit cleanly when its parent closes stdin')
 }

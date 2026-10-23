@@ -25,6 +25,7 @@ Build native mencari SDK pada `.tools/dotnet/dotnet.exe`, lalu `dotnet` di PATH.
 | `npm run build` | Typecheck, build renderer/Electron, publish helper |
 | `npm start` | Jalankan hasil build lokal |
 | `npm run test:native` | Uji helper terhadap audio/media Windows asli |
+| `npm run test:native -- --protocol-only` | Uji protokol, antrean perintah, dan shutdown tanpa memerlukan perangkat audio |
 | `npm run test:smoke` | Smoke UI dengan helper dinonaktifkan dan fixture aktivitas |
 | `npm run test:smoke -- --dev` | Smoke UI lewat Vite |
 | `npm run test:smoke -- --native` | Smoke Electron dengan integrasi Windows asli |
@@ -39,6 +40,10 @@ Jalankan `release/win-unpacked/Dynamic Island.exe` bersama seluruh isi foldernya
 Workflow **Windows build and release** berjalan pada push ke `master`/`main`, pull request, tag `v*`, atau melalui **Actions → Run workflow**. Runner Windows memakai Node.js 24 dan .NET 10, menjalankan lint, unit test, build, dan smoke UI Electron. Installer x64 `.exe` dan `SHA256SUMS.txt` tersedia pada artifact **dynamic-island-windows-x64-installer**; ZIP tersedia terpisah pada **dynamic-island-windows-x64-portable**. Artifact disimpan selama 14 hari. Pilih salah satu format distribusi, tidak perlu mengunduh keduanya. Screenshot UI disimpan terpisah selama 7 hari.
 
 Paket menyertakan Electron dan runtime .NET agar dapat berjalan tanpa instalasi runtime tambahan. Locale Electron dibatasi ke Indonesia dan Inggris. Dependensi JavaScript sudah dibundel oleh Vite/esbuild, sehingga `node_modules` tidak disalin lagi ke `app.asar`. Ukuran unduhan installer berbeda dari ukuran folder aplikasi setelah dipasang.
+
+Helper native memakai message loop STA Win32 tanpa Windows Forms dan dipublikasikan dengan trimming. Metadata JSON dihasilkan saat kompilasi; deklarasi COM audio dipertahankan utuh agar urutan vtable tidak berubah. Build membersihkan direktori publish terlebih dahulu agar library dari build lama tidak ikut dikemas. Trimmer masih melaporkan peringatan pada fallback generik WinRT dan aktivasi COM bawaan; smoke native memeriksa audio/media pada helper hasil trimming. Izin notifikasi MSIX tetap memerlukan verifikasi manual pada paket terpasang.
+
+Installer menggunakan kompresi solid (`nsis.differentialPackage: false`) karena aplikasi belum menyediakan auto-update. CI menolak installer berukuran 100.000.000 byte atau lebih. ZIP memakai format kompresi berbeda dan dapat berukuran lebih besar daripada installer; batas 100 MB berlaku untuk installer, bukan ZIP atau folder terpasang.
 
 Untuk rilis publik, ubah versi `package.json` dan lockfile melalui `npm version patch --no-git-tag-version` (atau `minor`/`major`), commit perubahan versi, lalu push commit dan tag yang sesuai:
 

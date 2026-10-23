@@ -48,6 +48,15 @@ jobs:
         run: npm run dist:win
       - name: Electron UI smoke test
         run: npm run test:smoke
+      - name: Native protocol and shutdown smoke test
+        run: npm run test:native -- --protocol-only
+      - name: Enforce installer size below 100 MB
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $installer = Get-Item -LiteralPath "release/Dynamic-Island-$version-x64-setup.exe"
+          Write-Host ("Installer: {0:N2} MB ({1} bytes)" -f ($installer.Length / 1000000), $installer.Length)
+          if ($installer.Length -ge 100000000) { throw 'Installer must be below 100 MB (100,000,000 bytes)' }
       - name: Generate SHA256 checksums
         shell: pwsh
         run: |
