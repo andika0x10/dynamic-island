@@ -46,6 +46,11 @@ jobs:
       - run: npm test
       - name: Build installer and ZIP
         run: npm run dist:win
+      - name: Ensure WebView2 Runtime on the CI runner
+        shell: pwsh
+        run: |
+          $runtime = Start-Process -FilePath (Resolve-Path 'release/webview-unpacked/Dynamic Island.exe') -ArgumentList '--ensure-webview' -WindowStyle Hidden -Wait -PassThru
+          if ($runtime.ExitCode -ne 0) { throw 'WebView2 Runtime setup failed' }
       - name: WebView2 UI and native integration smoke test
         run: npm run test:smoke -- --packaged
       - name: Enforce small distributions
@@ -89,7 +94,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ui-screenshots
-          path: test-results/*.png
+          path: |
+            test-results/*.png
+            test-results/*.txt
           if-no-files-found: ignore
           retention-days: 7
 

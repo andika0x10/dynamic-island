@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawn, execFileSync } from 'node:child_process'
-import { mkdtemp, mkdir, readFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { chromium } from 'playwright'
@@ -101,7 +101,11 @@ try {
   await waitExit()
   assert.deepEqual(errors, [])
   console.log('WebView2 smoke passed:', JSON.stringify({ audio: snapshot.audio.availability, media: snapshot.media.availability, battery: snapshot.battery.availability }))
+} catch (error) {
+  await writeFile('test-results/webview-smoke-error.txt', String(error.stack ?? error))
+  throw error
 } finally {
+  try { await writeFile('test-results/webview-startup-error.txt', await readFile(join(profile, 'startup-error.txt'))) } catch { }
   await browser?.close().catch(() => {})
   if (child.exitCode === null) child.kill()
 }
