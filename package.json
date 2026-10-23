@@ -32,9 +32,11 @@
       "dist/**/*",
       "dist-electron/*.js",
       "dist-electron/*.cjs",
-      "package.json"
+      "package.json",
+      "!node_modules/**/*"
     ],
     "asar": true,
+    "electronLanguages": ["en-US", "id"],
     "extraResources": [{ "from": "native/WindowsBridge/bin/publish", "to": "native", "filter": ["**/*", "!**/*.pdb"] }],
     "win": {
       "signAndEditExecutable": false

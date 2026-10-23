@@ -36,7 +36,9 @@ Jalankan `release/win-unpacked/Dynamic Island.exe` bersama seluruh isi foldernya
 
 ## Distribusi melalui GitHub Actions
 
-Workflow **Windows build and release** berjalan pada push ke `master`/`main`, pull request, tag `v*`, atau melalui **Actions → Run workflow**. Runner Windows memakai Node.js 24 dan .NET 10, menjalankan lint, unit test, build, dan smoke UI Electron. Hasil installer x64 `.exe`, ZIP, dan `SHA256SUMS.txt` tersedia pada artifact **dynamic-island-windows-x64** selama 14 hari. Screenshot UI disimpan terpisah selama 7 hari.
+Workflow **Windows build and release** berjalan pada push ke `master`/`main`, pull request, tag `v*`, atau melalui **Actions → Run workflow**. Runner Windows memakai Node.js 24 dan .NET 10, menjalankan lint, unit test, build, dan smoke UI Electron. Installer x64 `.exe` dan `SHA256SUMS.txt` tersedia pada artifact **dynamic-island-windows-x64-installer**; ZIP tersedia terpisah pada **dynamic-island-windows-x64-portable**. Artifact disimpan selama 14 hari. Pilih salah satu format distribusi, tidak perlu mengunduh keduanya. Screenshot UI disimpan terpisah selama 7 hari.
+
+Paket menyertakan Electron dan runtime .NET agar dapat berjalan tanpa instalasi runtime tambahan. Locale Electron dibatasi ke Indonesia dan Inggris. Dependensi JavaScript sudah dibundel oleh Vite/esbuild, sehingga `node_modules` tidak disalin lagi ke `app.asar`. Ukuran unduhan installer berbeda dari ukuran folder aplikasi setelah dipasang.
 
 Untuk rilis publik, ubah versi `package.json` dan lockfile melalui `npm version patch --no-git-tag-version` (atau `minor`/`major`), commit perubahan versi, lalu push commit dan tag yang sesuai:
 
