@@ -67,7 +67,7 @@ public sealed class MediaService
         var current = manager?.GetCurrentSession();
         if (current is null) return false;
         var timeline = current.GetTimelineProperties();
-        var target = Math.Clamp(position, 0, Math.Max(0, (timeline.EndTime - timeline.StartTime).TotalSeconds));
+        var target = Math.Min(Math.Max(0, (timeline.EndTime - timeline.StartTime).TotalSeconds), Math.Max(0, position));
         return await current.TryChangePlaybackPositionAsync(timeline.StartTime.Ticks + TimeSpan.FromSeconds(target).Ticks);
     }
 }

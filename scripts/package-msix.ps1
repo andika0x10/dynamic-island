@@ -7,7 +7,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$source = Join-Path $workspace 'release/win-unpacked'
+$source = Join-Path $workspace 'release/webview-unpacked'
 if (-not (Test-Path -LiteralPath (Join-Path $source 'Dynamic Island.exe'))) { throw 'Run npm run pack before packaging MSIX.' }
 if (-not $MakeAppx) {
   $sdkRoots = @((Join-Path $workspace '.tools/windows-sdk'), "${env:ProgramFiles(x86)}/Windows Kits/10/bin")
@@ -23,6 +23,8 @@ New-Item -ItemType Directory -Path $stage -Force | Out-Null
 Get-ChildItem -LiteralPath $source | Copy-Item -Destination $stage -Recurse
 [xml]$manifest = Get-Content -LiteralPath (Join-Path $workspace 'packaging/AppxManifest.xml') -Raw
 $manifest.Package.Identity.Publisher = $Publisher
+$version = (Get-Content -LiteralPath (Join-Path $workspace 'package.json') -Raw | ConvertFrom-Json).version
+$manifest.Package.Identity.Version = "$version.0"
 $manifest.Save((Join-Path $stage 'AppxManifest.xml'))
 $assets = Join-Path $stage 'Assets'
 New-Item -ItemType Directory -Path $assets -Force | Out-Null
@@ -46,7 +48,7 @@ foreach ($asset in @(@('StoreLogo', 50), @('Square44x44Logo', 44), @('Square150x
   $bitmap.Save((Join-Path $assets ($asset[0] + '.png')), [Drawing.Imaging.ImageFormat]::Png)
   $brush.Dispose(); $pen.Dispose(); $path.Dispose(); $graphics.Dispose(); $bitmap.Dispose()
 }
-$output = Join-Path $workspace 'release/Dynamic-Island-0.1.0-x64.msix'
+$output = Join-Path $workspace "release/Dynamic-Island-$version-x64.msix"
 $buildLog = $stage + '.log'
 & $MakeAppx pack /o /d $stage /p $output *> $buildLog
 if ($LASTEXITCODE -ne 0) { throw "MakeAppx validation or packaging failed. See $buildLog" }

@@ -46,17 +46,17 @@ jobs:
       - run: npm test
       - name: Build installer and ZIP
         run: npm run dist:win
-      - name: Electron UI smoke test
-        run: npm run test:smoke
-      - name: Native protocol and shutdown smoke test
-        run: npm run test:native -- --protocol-only
-      - name: Enforce installer size below 100 MB
+      - name: WebView2 UI and native integration smoke test
+        run: npm run test:smoke -- --packaged
+      - name: Enforce small distributions
         shell: pwsh
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           $installer = Get-Item -LiteralPath "release/Dynamic-Island-$version-x64-setup.exe"
           Write-Host ("Installer: {0:N2} MB ({1} bytes)" -f ($installer.Length / 1000000), $installer.Length)
-          if ($installer.Length -ge 100000000) { throw 'Installer must be below 100 MB (100,000,000 bytes)' }
+          if ($installer.Length -ge 5000000) { throw 'Installer must be below 5 MB' }
+          $zip = Get-Item -LiteralPath "release/Dynamic-Island-$version-x64.zip"
+          if ($zip.Length -ge 5000000) { throw 'ZIP must be below 5 MB' }
       - name: Generate SHA256 checksums
         shell: pwsh
         run: |

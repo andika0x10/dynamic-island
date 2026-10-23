@@ -11,14 +11,16 @@ public sealed class AudioService
         try { return WithEndpoint((volume, device) => { volume.GetMasterVolumeLevelScalar(out float level); volume.GetMute(out bool muted); return new AudioState("available", level, muted, device); }); }
         catch { return new AudioState(); }
     }
-    public void SetVolume(float value) => WithEndpoint((volume, _) => { volume.SetMasterVolumeLevelScalar(Math.Clamp(value, 0, 1), Guid.Empty); return true; });
+    public void SetVolume(float value) => WithEndpoint((volume, _) => { volume.SetMasterVolumeLevelScalar(Math.Min(1, Math.Max(0, value)), Guid.Empty); return true; });
     public void SetMute(bool value) => WithEndpoint((volume, _) => { volume.SetMute(value, Guid.Empty); return true; });
 
     // COM dispatch uses declaration order: retain even the unused vtable slots.
+#if NET8_0_OR_GREATER
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IMMDeviceEnumerator))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IMMDevice))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IAudioEndpointVolume))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IPropertyStore))]
+#endif
     private static T WithEndpoint<T>(Func<IAudioEndpointVolume, string, T> operation)
     {
         var enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();

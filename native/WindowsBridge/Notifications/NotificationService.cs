@@ -31,7 +31,7 @@ public sealed class NotificationService
             Access = Map(listener.GetAccessStatus());
             if (!Enabled || Access != "allowed") { initialized = false; Latest = null; return; }
             var notifications = await listener.GetNotificationsAsync(NotificationKinds.Toast);
-            var ids = notifications.Select(item => item.Id).ToHashSet();
+            var ids = new HashSet<uint>(notifications.Select(item => item.Id));
             if (initialized)
             {
                 foreach (var notification in notifications.OrderBy(item => item.CreationTime))
@@ -52,7 +52,7 @@ public sealed class NotificationService
         }
         catch { Access = "unavailable"; Latest = null; }
     }
-    private static string Limit(string value, int size) => value.Length <= size ? value : value[..size];
+    private static string Limit(string value, int size) => value.Length <= size ? value : value.Substring(0, size);
     private static string Map(UserNotificationListenerAccessStatus status) => status switch { UserNotificationListenerAccessStatus.Allowed => "allowed", UserNotificationListenerAccessStatus.Denied => "denied", _ => "unknown" };
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern int GetCurrentPackageFullName(ref uint length, IntPtr name);
 }
