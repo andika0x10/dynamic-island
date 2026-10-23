@@ -9,7 +9,10 @@ export default defineConfig(({ command }) => {
   return {
     base: './',
     html: command === 'serve' ? { cspNonce: nonce } : undefined,
-    server: { host: '127.0.0.1', port: 5173, strictPort: true },
+    server: {
+      host: '127.0.0.1', port: 5173, strictPort: true,
+      watch: { ignored: ['**/.tools/**', '**/release/**', '**/dist-electron/**', '**/native/**/bin/**', '**/native/**/obj/**', '**/test-results/**'] },
+    },
     plugins: [
       {
         name: 'dev-csp',
