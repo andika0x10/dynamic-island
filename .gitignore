@@ -13,6 +13,11 @@ dist-ssr
 dist-electron
 release
 test-results
+.tools/
+native/**/bin/
+native/**/obj/
+*.pfx
+*.cer
 *.local
 
 # Editor directories and files
