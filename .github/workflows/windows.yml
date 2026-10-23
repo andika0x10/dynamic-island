@@ -43,7 +43,16 @@ jobs:
           }
       - run: npm ci
       - run: npm run lint
-      - run: npm test
+      - name: Unit tests
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path test-results -Force | Out-Null
+          npm test 2>&1 | Tee-Object -FilePath test-results/unit-tests.txt
+          if ($LASTEXITCODE -ne 0) {
+            $details = (Get-Content test-results/unit-tests.txt -Raw).Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+            Write-Output "::error title=Unit tests::$details"
+            exit 1
+          }
       - name: Build installer and ZIP
         run: npm run dist:win
       - name: Ensure WebView2 Runtime on the CI runner

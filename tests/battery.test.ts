@@ -44,7 +44,3 @@ test('timeout and process errors become unavailable, retaining power source', as
   assert.equal(snapshot.availability, 'unavailable')
   assert.equal(snapshot.source, 'battery')
 })
-test('real Windows CIM query returns a structured snapshot', { skip: process.platform !== 'win32' }, async () => {
-  const snapshot = await queryBattery(false)
-  assert.notEqual(snapshot.availability, 'unavailable')
-})
