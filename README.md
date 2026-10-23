@@ -44,7 +44,7 @@ Jalankan `release/win-unpacked/Dynamic Island.exe` bersama seluruh isi foldernya
 
 Klik pill/bubble untuk membuka aktivitas; klik header atau Escape saat window fokus untuk menutup. Kontrol di dalam panel tidak menutupnya. Pilih aktivitas lain melalui tombol di bagian bawah. Detail yang dibuka manual dipertahankan ketika ada event baru. Ketika tertutup, timer selesai mendapat prioritas, lalu notifikasi, volume, dan charger; sesudahnya kembali ke media/timer aktif dengan baterai sebagai fallback. Maksimal dua aktivitas terlihat sekaligus.
 
-Canvas maksimum 460 × 320 DIP, 12 DIP di bawah work area monitor utama. Compact 190 × 40; expanded lebar 400 dengan tinggi 200–270 sesuai konten. Window dibatasi work area dan diposisikan ulang saat display/DPI berubah. Area transparan dan sudut membulat meneruskan klik. Reduced motion mengikuti perubahan preferensi sistem. Click-through di atas aplikasi elevated dan exclusive fullscreen tetap bergantung perilaku Electron/Windows.
+Canvas maksimum 460 × 320 DIP, 12 DIP di bawah work area monitor utama. Compact 190 × 40; expanded lebar 400 dengan tinggi yang diukur dari isi panel, termasuk pesan error, serta ruang terpisah untuk navigasi bawah. Window dibatasi work area dan diposisikan ulang saat display/DPI berubah. Area transparan dan sudut membulat meneruskan klik. Reduced motion mengikuti perubahan preferensi sistem. Click-through di atas aplikasi elevated dan exclusive fullscreen tetap bergantung perilaku Electron/Windows.
 
 ## Struktur modular
 
@@ -87,7 +87,7 @@ Skrip memakai sertifikat yang disediakan, tidak membuat sertifikat, mengubah tru
 
 ## Validasi dan batas verifikasi
 
-Unit test mencakup normalisasi baterai, timer pause/resume/restart/sleep, data persisten rusak, prioritas/manual pin, expiry, command tidak valid, helper hilang, dan snapshot native rusak. Smoke UI mengambil screenshot compact, expanded, dua aktivitas, musik, timer, dan pengaturan; memeriksa Escape, reduced motion, transparansi, hit-test sudut, IPC, dan single instance. Screenshot disimpan di `test-results`.
+Unit test mencakup normalisasi baterai, timer pause/resume/restart/sleep, data persisten rusak, prioritas/manual pin, expiry, command tidak valid, helper hilang, dan snapshot native rusak. Smoke UI mengambil screenshot compact, expanded, dua aktivitas, musik, timer, dan pengaturan; memeriksa Escape, reduced motion, transparansi, hit-test sudut, IPC, dan single instance. Regresi layout memeriksa overflow, kontrol terpotong, dan jarak konten ke navigasi; mencakup baterai 100%, nama perangkat panjang, pesan error, serta window lebar 460/360 DIP. Screenshot disimpan di `test-results`.
 
 Native smoke menggunakan nilai volume/mute yang sedang berlaku sehingga tidak sengaja mengubah preferensi audio. Smoke desktop memakai profil terpisah dan menonaktifkan bunyi pengujian timer. Pembacaan media dapat unavailable jika tidak ada sesi pemutar; pembacaan audio memerlukan perangkat output.
 

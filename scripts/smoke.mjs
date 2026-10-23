@@ -9,6 +9,7 @@ import electronBinary from 'electron'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { assertPanelFits } from './lib/panel-layout.mjs'
 
 if (process.argv.includes('--packaged') || process.argv.includes('--native')) {
   await import('./smoke-desktop.mjs')
@@ -61,8 +62,13 @@ try {
   await mkdir('test-results', { recursive: true })
   await page.screenshot({ path: 'test-results/compact.png', omitBackground: true })
   await trigger.click()
-  await page.waitForFunction(() => Math.abs(document.querySelector('[data-island]').getBoundingClientRect().height - 200) < 1)
+  await page.waitForFunction(() => {
+    const shell = document.querySelector('[data-island]')
+    const content = document.querySelector('[data-panel-body]')
+    return content && Math.abs(shell.getBoundingClientRect().height - (content.getBoundingClientRect().height + 103)) < 1
+  })
   assert.equal(await page.getByRole('button', { name: 'Tutup Baterai', exact: true }).getAttribute('aria-expanded'), 'true')
+  await assertPanelFits(page, 'Battery')
   await page.screenshot({ path: 'test-results/expanded.png', omitBackground: true })
   const hitTest = await page.evaluate(() => {
     const pill = document.querySelector('[data-island]')
@@ -104,14 +110,37 @@ try {
     await page.getByRole('button', { name: 'Buka Musik', exact: true }).click()
     await page.getByRole('heading', { name: 'Midnight City' }).waitFor()
     await delay(250)
+    await assertPanelFits(page, 'Media')
     await page.screenshot({ path: 'test-results/media.png', omitBackground: true })
     await page.getByRole('button', { name: 'Timer', exact: true }).click()
     await page.getByRole('button', { name: 'Jeda', exact: true }).waitFor()
     await delay(250)
+    await assertPanelFits(page, 'Timer')
     await page.screenshot({ path: 'test-results/timer.png', omitBackground: true })
     await page.keyboard.press('Escape')
     await publish(initial)
   }
+  // Regress the clipped panels from the user's screenshots, including a narrow
+  // window, long device metadata and a command error that increases body height.
+  await page.getByRole('button', { name: 'Buka Baterai', exact: true }).click()
+  for (const width of [460, 360]) {
+    await application.evaluate(({ BrowserWindow }, width) => BrowserWindow.getAllWindows()[0].setBounds({ width }), width)
+    await publish({ ...initial, battery: { ...initial.battery, percentage: 100 } })
+    await page.getByRole('button', { name: 'Baterai', exact: true }).click()
+    await assertPanelFits(page, `Battery ${width}`)
+    await page.locator('[data-island]').screenshot({ path: `test-results/battery-fit-${width}.png`, omitBackground: true })
+    const audio = { availability: 'available', volume: .12, muted: false, device: 'Headphones (2- Realtek(R) Audio) — Nama perangkat audio yang sangat panjang' }
+    await publish({ ...initial, audio })
+    await page.getByRole('button', { name: 'Volume', exact: true }).click()
+    await assertPanelFits(page, `Volume ${width}`)
+    await page.locator('[data-island]').screenshot({ path: `test-results/volume-fit-${width}.png`, omitBackground: true })
+    await page.getByRole('button', { name: 'Bisukan', exact: true }).click()
+    await page.getByRole('alert').waitFor()
+    await assertPanelFits(page, `Volume with error ${width}`)
+  }
+  await application.evaluate(({ BrowserWindow }, width) => BrowserWindow.getAllWindows()[0].setBounds({ width }), config.bounds.width)
+  await page.keyboard.press('Escape')
+  await publish(initial)
   assert.equal((await page.evaluate(() => window.desktop.command({ type: 'volume', volume: 5 }))).ok, false)
   assert.equal((await page.evaluate(() => window.desktop.command({ type: 'timer-start', seconds: 60 }))).ok, true)
   assert.equal((await page.evaluate(() => window.desktop.command({ type: 'timer-pause' }))).ok, true)

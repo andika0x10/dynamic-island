@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { _electron as electron } from 'playwright'
 import { setTimeout as delay } from 'node:timers/promises'
+import { assertPanelFits } from './lib/panel-layout.mjs'
 
 const env = { ...process.env, ISLAND_PROFILE_DIR: await mkdtemp(join(tmpdir(), 'dynamic-island-native-smoke-')) }
 delete env.ELECTRON_RUN_AS_NODE
@@ -33,6 +34,11 @@ try {
   const trigger = page.locator('[aria-controls="island-content"]')
   if (await trigger.getAttribute('aria-expanded') === 'false') await trigger.click()
   await page.waitForFunction(() => Math.abs(document.querySelector('[data-island]').getBoundingClientRect().width - 400) < 1)
+  for (const name of ['Baterai', 'Volume']) {
+    await page.getByRole('button', { name, exact: true }).click()
+    await page.getByRole('heading', { name, exact: true }).waitFor()
+    await assertPanelFits(page, `Live ${name}`)
+  }
   await mkdir('test-results', { recursive: true })
   await page.screenshot({ path: `test-results/${packaged ? 'packaged' : 'native'}-live.png`, omitBackground: true })
   await page.evaluate(() => window.desktop.command({ type: 'preferences', value: { sound: false } }))
