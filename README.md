@@ -1,40 +1,37 @@
 # Dynamic Island for Windows
 
-Aktivitas sehari-hari dalam satu overlay kecil di desktop Windows. Pantau musik, volume, baterai, dan timer tanpa berpindah aplikasi.
+Musik, timer, baterai, dan volume dalam satu overlay kecil di desktop.
 
-## Screenshot
+[**Unduh untuk Windows**](https://github.com/andika0x10/dynamic-island/releases/latest) · [Panduan pengembangan](docs/DEVELOPMENT.md)
 
-| Kontrol musik | Timer |
-| --- | --- |
-| ![Panel musik dengan kontrol pemutaran dan timeline](docs/screenshots/music.png) | ![Panel timer dengan hitung mundur dan tombol jeda](docs/screenshots/timer.png) |
+![Dynamic Island dalam mode ringkas, panel kontrol musik, dan panel timer](docs/screenshots/overview.png)
 
-*Screenshot menggunakan data contoh dari pengujian UI.*
+<sub>Tampilan aplikasi dengan data contoh. Klik island untuk membuka detail; tekan Escape untuk menutup.</sub>
 
-## Fitur
+## Yang bisa kamu lakukan
 
-- Kontrol musik yang sedang diputar di Windows.
-- Atur volume dan mute dengan cepat.
-- Lihat status baterai dan pengisian daya.
-- Buat, jeda, dan lanjutkan timer.
-- Tampilan ringkas dengan hingga dua aktivitas sekaligus. Klik untuk membuka detail, tekan Escape untuk menutup.
+- **Musik & volume** — kontrol pemutaran, geser posisi lagu, atur volume, atau mute.
+- **Timer** — mulai hitung mundur, jeda, dan lanjutkan saat dibutuhkan.
+- **Baterai** — lihat sisa daya dan status pengisian tanpa membuka pengaturan.
 
-## Instalasi
+Dua aktivitas bisa tampil bersamaan. Gunakan ikon tray untuk menampilkan, menyembunyikan, atau keluar dari aplikasi.
 
-Untuk Windows 10 (2004 atau lebih baru) dan Windows 11, 64-bit.
+## Mulai pakai
 
-Unduh installer atau ZIP dari [Releases](https://github.com/andika0x10/dynamic-island/releases). Jalankan installer, atau ekstrak seluruh ZIP lalu buka `Dynamic Island.exe`.
+Butuh **Windows 10 versi 2004+ atau Windows 11 (64-bit)**.
 
-Mulai v0.2.0, installer sekitar **1,24 MB** dan ZIP sekitar **0,89 MB**. Aplikasi memakai WebView2 bersama milik Windows dan .NET Framework 4.8 yang tersedia pada versi Windows yang didukung. Jika WebView2 belum terpasang, installer memerlukan internet untuk mengunduhnya dari Microsoft. Untuk ZIP, pasang [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) terlebih dahulu bila diperlukan. Folder aplikasi sekitar 3 MB, di luar runtime bersama dan cache WebView2.
+1. Unduh **installer** atau **ZIP** dari [rilis terbaru](https://github.com/andika0x10/dynamic-island/releases/latest).
+2. Jalankan installer, atau ekstrak seluruh ZIP lalu buka `Dynamic Island.exe`.
 
-Aplikasi belum ditandatangani, sehingga Windows dapat menampilkan SmartScreen. Gunakan ikon tray untuk menampilkan, menyembunyikan, atau keluar dari aplikasi.
+Installer akan mengunduh WebView2 jika belum tersedia. Untuk versi ZIP, pasang [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) bila diperlukan. Aplikasi belum ditandatangani, sehingga Windows dapat menampilkan SmartScreen.
 
-## Menjalankan dari source
+## Jalankan dari source
 
-Siapkan Node.js 22.18+ atau 24+ dan .NET 10 SDK di Windows, lalu jalankan:
+Siapkan Node.js 22.18+ atau 24+ dan .NET 10 SDK di Windows.
 
 ```sh
 npm install
 npm run dev
 ```
 
-Panduan build, pengujian, dan rilis tersedia di [dokumentasi pengembangan](docs/DEVELOPMENT.md).
+Detail build, pengujian, dan rilis ada di [panduan pengembangan](docs/DEVELOPMENT.md).
