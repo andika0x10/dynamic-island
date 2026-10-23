@@ -28,9 +28,12 @@
       "output": "release"
     },
     "win": {
+      "icon": "assets/brand/app.ico",
       "signAndEditExecutable": false
     },
     "nsis": {
+      "installerIcon": "assets/brand/app.ico",
+      "uninstallerIcon": "assets/brand/app.ico",
       "differentialPackage": false,
       "oneClick": false,
       "perMachine": false,

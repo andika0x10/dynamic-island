@@ -5,6 +5,7 @@ import { Button, ErrorMessage } from '../../shared/ui/Button.tsx'
 import { clock } from '../../shared/ui/format.ts'
 import { useNow } from '../../shared/hooks/useNow.ts'
 import { useCommand } from '../../shared/hooks/useCommand.ts'
+import { mediaTimeline } from './timeline.ts'
 import styles from './Media.module.css'
 import ui from '../../shared/ui/Controls.module.css'
 
@@ -18,13 +19,15 @@ export function MediaPanel({ media }: { media: MediaSnapshot }) {
   const now = useNow()
   const { run, error, pending } = useCommand()
   const [scrub, setScrub] = useState<number | null>(null)
-  const position = Math.min(media.duration, Math.max(0, media.position + (media.playing ? Math.max(0, now - media.updatedAt) / 1000 : 0)))
+  const timeline = mediaTimeline(media, now)
+  const position = timeline ? Math.min(timeline.duration, Math.max(0, scrub ?? timeline.position)) : 0
   return <div>
     <div className={styles.heading}><Artwork media={media}/><div className={styles.metadata}><h2 className={ui.title}>{media.title || 'Media tanpa judul'}</h2><p className={ui.subtitle}>{media.artist || 'Media Windows'}</p></div><Waveform playing={media.playing}/></div>
-    <input className={ui.slider} aria-label="Posisi pemutaran" type="range" min="0" max={media.duration || 1} step="1" value={scrub ?? position} disabled={!media.controls.seek || !media.duration || pending}
+    {timeline ? <><input className={ui.slider} aria-label="Posisi pemutaran" type="range" min="0" max={timeline.duration} step="1" value={position} disabled={!media.controls.seek || pending}
       onChange={event => setScrub(Number(event.target.value))} onPointerUp={event => { void run({ type: 'seek', position: Number(event.currentTarget.value) }); setScrub(null) }}
       onKeyUp={event => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { void run({ type: 'seek', position: Number(event.currentTarget.value) }); setScrub(null) } }} onBlur={() => setScrub(null)}/>
-    <div className={ui.row}><span className={ui.caption}>{clock(scrub ?? position)}</span><span className={ui.caption}>−{clock(media.duration - (scrub ?? position))}</span></div>
+    <div className={ui.row}><span className={ui.caption}>{clock(position)}</span><span className={ui.caption}>−{clock(timeline.duration - position)}</span></div></>
+      : <p className={ui.caption} role="status">Durasi tidak tersedia</p>}
     <div className={styles.transport}>
       <Button icon aria-label="Lagu sebelumnya" disabled={!media.controls.previous || pending} onClick={() => void run({ type: 'media', action: 'previous' })}><Icon name="previous"/></Button>
       <Button icon primary aria-label={media.playing ? 'Jeda musik' : 'Putar musik'} disabled={pending || !(media.playing ? media.controls.pause : media.controls.play)} onClick={() => void run({ type: 'media', action: media.playing ? 'pause' : 'play' })}><Icon name={media.playing ? 'pause' : 'play'} size={26}/></Button>

@@ -29,25 +29,19 @@ $manifest.Save((Join-Path $stage 'AppxManifest.xml'))
 $assets = Join-Path $stage 'Assets'
 New-Item -ItemType Directory -Path $assets -Force | Out-Null
 Add-Type -AssemblyName System.Drawing
+$logo = [Drawing.Image]::FromFile((Join-Path $workspace 'public/brand/logo.png'))
+try {
 foreach ($asset in @(@('StoreLogo', 50), @('Square44x44Logo', 44), @('Square150x150Logo', 150))) {
   $size = [int]$asset[1]
   $bitmap = [Drawing.Bitmap]::new($size, $size)
   $graphics = [Drawing.Graphics]::FromImage($bitmap)
-  $graphics.SmoothingMode = [Drawing.Drawing2D.SmoothingMode]::AntiAlias
+  $graphics.InterpolationMode = [Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
   $graphics.Clear([Drawing.Color]::Transparent)
-  $path = [Drawing.Drawing2D.GraphicsPath]::new()
-  $x = [single]($size * .08); $y = [single]($size * .32); $height = [single]($size * .36); $width = [single]($size * .84)
-  $path.AddArc($x, $y, $height, $height, 90, 180)
-  $path.AddArc($x + $width - $height, $y, $height, $height, 270, 180)
-  $path.CloseFigure()
-  $graphics.FillPath([Drawing.Brushes]::Black, $path)
-  $pen = [Drawing.Pen]::new([Drawing.Color]::FromArgb(100, 255, 255, 255), [single]($size * .015))
-  $graphics.DrawPath($pen, $path)
-  $brush = [Drawing.SolidBrush]::new([Drawing.Color]::FromArgb(48, 209, 88))
-  $graphics.FillEllipse($brush, [single]($size * .66), [single]($size * .44), [single]($size * .12), [single]($size * .12))
+  $graphics.DrawImage($logo, 0, 0, $size, $size)
   $bitmap.Save((Join-Path $assets ($asset[0] + '.png')), [Drawing.Imaging.ImageFormat]::Png)
-  $brush.Dispose(); $pen.Dispose(); $path.Dispose(); $graphics.Dispose(); $bitmap.Dispose()
+  $graphics.Dispose(); $bitmap.Dispose()
 }
+} finally { $logo.Dispose() }
 $output = Join-Path $workspace "release/Dynamic-Island-$version-x64.msix"
 $buildLog = $stage + '.log'
 & $MakeAppx pack /o /d $stage /p $output *> $buildLog

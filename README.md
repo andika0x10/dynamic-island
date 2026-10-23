@@ -1,5 +1,7 @@
 # Dynamic Island for Windows
 
+<img src="public/brand/logo.png" alt="Logo Dynamic Island" width="160" />
+
 Musik, timer, baterai, dan volume dalam satu overlay kecil di desktop.
 
 [**Unduh untuk Windows**](https://github.com/andika0x10/dynamic-island/releases/latest) · [Panduan pengembangan](docs/DEVELOPMENT.md)

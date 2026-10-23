@@ -58,11 +58,10 @@ internal sealed class Overlay : Form
         menu.Items.Add("Sembunyikan", null, (_, _) => Hide());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Keluar", null, (_, _) => Close());
-        using var bitmap = new Bitmap(16, 16);
-        using (var graphics = Graphics.FromImage(bitmap)) { graphics.Clear(Color.Transparent); graphics.FillRoundedPill(); }
-        var iconHandle = bitmap.GetHicon();
-        using var borrowed = Icon.FromHandle(iconHandle);
-        var icon = (Icon)borrowed.Clone(); Native.DestroyIcon(iconHandle);
+        using var iconStream = typeof(Overlay).Assembly.GetManifestResourceStream("DynamicIsland.AppIcon")!;
+        using var appIcon = new Icon(iconStream);
+        Icon = (Icon)appIcon.Clone();
+        var icon = new Icon(appIcon, SystemInformation.SmallIconSize);
         tray = new NotifyIcon { Text = "Dynamic Island", Icon = icon, ContextMenuStrip = menu, Visible = true };
         tray.DoubleClick += (_, _) => ShowOverlay();
         service.Changed += Publish;
@@ -179,7 +178,7 @@ internal sealed class Overlay : Form
     }
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= DisplayChanged; ready = false; hitTest.Dispose(); service.Dispose(); tray.Visible = false; var icon = tray.Icon; var menu = tray.ContextMenuStrip; tray.Dispose(); icon?.Dispose(); menu?.Dispose(); }
+        if (disposing) { Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= DisplayChanged; ready = false; hitTest.Dispose(); service.Dispose(); tray.Visible = false; var icon = tray.Icon; var menu = tray.ContextMenuStrip; tray.Dispose(); icon?.Dispose(); Icon?.Dispose(); menu?.Dispose(); }
         base.Dispose(disposing);
     }
 }
@@ -192,12 +191,10 @@ internal static class Native
     [DllImport("dwmapi.dll")] internal static extern int DwmEnableBlurBehindWindow(IntPtr window, ref Blur blur);
     [DllImport("gdi32.dll")] internal static extern IntPtr CreateRectRgn(int left, int top, int right, int bottom);
     [DllImport("gdi32.dll")] internal static extern bool DeleteObject(IntPtr obj);
-    [DllImport("user32.dll")] internal static extern bool DestroyIcon(IntPtr icon);
     [DllImport("user32.dll")] internal static extern int GetWindowLong(IntPtr window, int index);
     [DllImport("user32.dll")] internal static extern int SetWindowLong(IntPtr window, int index, int value);
     [DllImport("user32.dll")] internal static extern bool SetLayeredWindowAttributes(IntPtr window, uint key, byte alpha, uint flags);
     [DllImport("user32.dll")] internal static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
     [DllImport("user32.dll")] internal static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern uint RegisterWindowMessage(string name);
-    internal static void FillRoundedPill(this Graphics graphics) { graphics.FillRectangle(Brushes.White, 4, 4, 8, 8); graphics.FillEllipse(Brushes.White, 0, 4, 8, 8); graphics.FillEllipse(Brushes.White, 8, 4, 8, 8); }
 }
