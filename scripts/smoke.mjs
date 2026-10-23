@@ -9,6 +9,7 @@ import electronBinary from 'electron'
 
 const executablePath = process.argv.includes('--packaged') ? resolve('release/win-unpacked/Dynamic Island.exe') : undefined
 const electronEnv = { ...process.env }
+electronEnv.ISLAND_DISABLE_NATIVE = '1'
 delete electronEnv.ELECTRON_RUN_AS_NODE
 delete electronEnv.VITE_DEV_SERVER_URL
 let server
@@ -34,7 +35,7 @@ try {
     await delay(200)
   } while (Date.now() < deadline)
   assert.ok(['available', 'absent'].includes(snapshot.availability), JSON.stringify(snapshot))
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['getBattery', 'onBattery', 'setClickThrough'])
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['command', 'getActivity', 'getBattery', 'onActivity', 'onBattery', 'setClickThrough'])
   assert.equal(await page.evaluate(() => typeof window.require), 'undefined')
   const config = await application.evaluate(({ BrowserWindow, screen }) => {
     const win = BrowserWindow.getAllWindows()[0]
@@ -45,14 +46,14 @@ try {
   assert.equal(config.prefs.contextIsolation, true)
   assert.equal(config.prefs.nodeIntegration, false)
   assert.equal(config.bounds.y, config.area.y + 12)
-  assert.equal(config.bounds.width, Math.min(420, config.area.width))
-  const pill = page.locator('[data-island]')
-  assert.equal(await pill.getAttribute('aria-expanded'), 'false')
+  assert.equal(config.bounds.width, Math.min(460, config.area.width))
+  const trigger = page.getByRole('button', { name: 'Buka Baterai', exact: true })
+  assert.equal(await trigger.getAttribute('aria-expanded'), 'false')
   await mkdir('test-results', { recursive: true })
   await page.screenshot({ path: 'test-results/compact.png', omitBackground: true })
-  await pill.click()
-  await page.waitForFunction(() => Math.abs(document.querySelector('[data-island]').getBoundingClientRect().height - 150) < 1)
-  assert.equal(await pill.getAttribute('aria-expanded'), 'true')
+  await trigger.click()
+  await page.waitForFunction(() => Math.abs(document.querySelector('[data-island]').getBoundingClientRect().height - 200) < 1)
+  assert.equal(await page.getByRole('button', { name: 'Tutup Baterai', exact: true }).getAttribute('aria-expanded'), 'true')
   await page.screenshot({ path: 'test-results/expanded.png', omitBackground: true })
   const hitTest = await page.evaluate(() => {
     const pill = document.querySelector('[data-island]')
@@ -66,22 +67,53 @@ try {
   })
   assert.deepEqual(hitTest, { outside: false, corner: false, inside: true, background: 'rgba(0, 0, 0, 0)' })
   await page.keyboard.press('Escape')
-  assert.equal(await pill.getAttribute('aria-expanded'), 'false')
+  assert.equal(await trigger.getAttribute('aria-expanded'), 'false')
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await pill.click()
-  assert.equal(await pill.getAttribute('aria-expanded'), 'true')
-  assert.ok(Math.abs((await pill.boundingBox()).width - 360) < 1)
+  await trigger.click()
+  assert.equal(await page.getByRole('button', { name: 'Tutup Baterai', exact: true }).getAttribute('aria-expanded'), 'true')
+  await page.waitForFunction(() => Math.abs(document.querySelector('[data-island]').getBoundingClientRect().width - 400) < 1)
   // A source change must not close a manually opened detail panel.
+  const initial = await page.evaluate(() => window.desktop.getActivity())
   const publish = value => application.evaluate(({ BrowserWindow }, snapshot) => {
-    BrowserWindow.getAllWindows()[0].webContents.send('battery:changed', snapshot)
+    BrowserWindow.getAllWindows()[0].webContents.send('activity:changed', snapshot)
   }, value)
-  await publish({ ...snapshot, source: snapshot.source === 'ac' ? 'battery' : 'ac' })
+  await publish({ ...initial, battery: { ...snapshot, source: snapshot.source === 'ac' ? 'battery' : 'ac' } })
   await delay(4200)
-  assert.equal(await pill.getAttribute('aria-expanded'), 'true')
+  assert.equal(await page.getByRole('button', { name: 'Tutup Baterai', exact: true }).getAttribute('aria-expanded'), 'true')
   await page.keyboard.press('Escape')
-  await publish(snapshot)
-  await page.waitForFunction(() => document.querySelector('[data-island]').getAttribute('aria-expanded') === 'true')
-  await page.waitForFunction(() => document.querySelector('[data-island]').getAttribute('aria-expanded') === 'false', null, { timeout: 6000 })
+  await page.waitForFunction(() => document.querySelector('[aria-controls="island-content"]').getAttribute('aria-expanded') === 'false')
+  await publish(initial)
+  await page.waitForFunction(() => document.querySelector('[aria-controls="island-content"]').getAttribute('aria-expanded') === 'true')
+  await page.waitForFunction(() => document.querySelector('[aria-controls="island-content"]').getAttribute('aria-expanded') === 'false', null, { timeout: 6500 })
+  if (!executablePath) {
+    const media = { ...initial.media, availability: 'available', title: 'Midnight City', artist: 'M83', playing: true, duration: 244, position: 68, updatedAt: Date.now(), controls: { play: true, pause: true, next: true, previous: true, seek: true } }
+    await publish({ ...initial, media, timer: { status: 'running', duration: 300, remaining: 280, deadline: Date.now() + 280000 } })
+    await page.locator('[data-secondary]').waitFor()
+    await page.waitForFunction(() => Math.abs(document.querySelector('[data-island]').getBoundingClientRect().width - 190) < 1)
+    await delay(250)
+    await page.screenshot({ path: 'test-results/two-activities.png', omitBackground: true })
+    await page.getByRole('button', { name: 'Buka Musik', exact: true }).click()
+    await page.getByRole('heading', { name: 'Midnight City' }).waitFor()
+    await delay(250)
+    await page.screenshot({ path: 'test-results/media.png', omitBackground: true })
+    await page.getByRole('button', { name: 'Timer', exact: true }).click()
+    await page.getByRole('button', { name: 'Jeda', exact: true }).waitFor()
+    await delay(250)
+    await page.screenshot({ path: 'test-results/timer.png', omitBackground: true })
+    await page.keyboard.press('Escape')
+    await publish(initial)
+  }
+  assert.equal((await page.evaluate(() => window.desktop.command({ type: 'volume', volume: 5 }))).ok, false)
+  assert.equal((await page.evaluate(() => window.desktop.command({ type: 'timer-start', seconds: 60 }))).ok, true)
+  assert.equal((await page.evaluate(() => window.desktop.command({ type: 'timer-pause' }))).ok, true)
+  assert.equal((await page.evaluate(() => window.desktop.getActivity())).timer.status, 'paused')
+  await page.evaluate(() => window.desktop.command({ type: 'timer-cancel' }))
+  const settingsWindow = application.waitForEvent('window')
+  await page.evaluate(() => window.desktop.command({ type: 'open-settings' }))
+  const settings = await settingsWindow
+  await settings.getByRole('heading', { name: 'Dynamic Island', exact: true }).waitFor()
+  await settings.screenshot({ path: 'test-results/settings.png' })
+  await settings.close()
   await application.evaluate(({ screen }) => screen.emit('display-metrics-changed', {}, screen.getPrimaryDisplay(), ['workArea']))
   await application.evaluate(({ powerMonitor }) => powerMonitor.emit('resume'))
   const popup = await page.evaluate(async () => {

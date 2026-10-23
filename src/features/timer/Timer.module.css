@@ -1,0 +1,9 @@
+.face { height: 108px; display: flex; align-items: center; justify-content: center; position: relative; color: var(--accent); }
+.face svg { position: absolute; width: 108px; height: 108px; transform: rotate(-90deg); }
+.face circle { fill: none; stroke: #ffffff16; stroke-width: 3; }
+.face .progress { stroke: var(--accent); stroke-linecap: round; stroke-dasharray: 276.46; }
+.face span { font-size: 26px; font-weight: 550; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.setup form { display: flex; align-items: flex-end; gap: 16px; margin-top: 20px; }
+.setup label { font-size: 13px; display: block; flex: 1; }
+.setup input { display: block; width: 100%; margin-top: 8px; background: #ffffff0c; border: 1px solid #ffffff25; border-radius: 10px; padding: 10px 12px; color: #fff; font: inherit; }
+.presets { display: flex; gap: 8px; }

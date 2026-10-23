@@ -52,7 +52,8 @@ else {
   app.on('second-instance', showOverlay)
   app.whenReady().then(async () => {
     const helper = app.isPackaged ? join(process.resourcesPath, 'native', 'WindowsBridge.exe') : join(directory, '../native/WindowsBridge/bin/publish/WindowsBridge.exe')
-    activities = new ActivityService(app.getPath('userData'), helper)
+    const helperPath = !app.isPackaged && process.env.ISLAND_DISABLE_NATIVE === '1' ? '' : helper
+    activities = new ActivityService(app.getPath('userData'), helperPath)
     registerIPC(activities, () => overlay, () => settings, openSettings)
     await createOverlay()
     tray = createTray(showOverlay, () => overlay?.hide(), () => { void openSettings() })
