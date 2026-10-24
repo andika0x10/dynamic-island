@@ -16,7 +16,6 @@
     "test": "node --test tests/*.test.ts",
     "test:media": "node scripts/test-media.mjs",
     "test:startup": "pwsh -NoLogo -NoProfile -File scripts/test-startup.ps1",
-    "test:native": "node scripts/smoke-webview.mjs",
     "test:smoke": "node scripts/smoke-webview.mjs",
     "test:ui": "node scripts/test-panel-ui.mjs",
     "lint": "oxlint",
@@ -44,7 +43,6 @@
       "include": "packaging/installer.nsh",
       "packElevateHelper": false
     },
-    "artifactName": "Dynamic-Island-${version}-${arch}.${ext}",
     "electronVersion": "45.0.0"
   },
   "dependencies": {

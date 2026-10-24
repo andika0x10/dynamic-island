@@ -3,7 +3,7 @@
 The master logo is `public/brand/logo.png`, with a transparent background.
 `assets/brand/app.ico` contains Windows icon sizes 16, 20, 24, 32, 40, 48, 64, 128, and 256 pixels.
 The host embeds the icon for its executable, window, and notification tray.
-The installer uses the same ICO; MSIX assets are resized from the master PNG.
+The installer uses the same ICO.
 
 Created with the built-in image generation tool. Final prompt:
 
