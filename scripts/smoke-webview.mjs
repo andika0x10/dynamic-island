@@ -9,6 +9,8 @@ import { assertPanelFits } from './lib/panel-layout.mjs'
 
 await mkdir('test-results', { recursive: true })
 const profile = await mkdtemp(join(tmpdir(), 'island-webview-test-'))
+// Upgrading an old profile must preserve supported preferences and discard removed fields.
+await writeFile(join(profile, 'settings.json'), JSON.stringify({ preferences: { media: true, volume: true, notifications: true, sound: false } }))
 const capture = name => execFileSync('pwsh', ['-NoProfile', '-File', 'scripts/capture-overlay.ps1', '-OutputPath', resolve(`test-results/${name}.png`)], { windowsHide: true })
 if (!process.env.CI) capture('webview-desktop-before')
 const executable = process.argv.includes('--packaged') ? 'release/webview-unpacked/Dynamic Island.exe' : 'native/WindowsHost/bin/Release/net48/Dynamic Island.exe'
@@ -37,19 +39,21 @@ try {
   page.on('pageerror', error => errors.push(error.message))
   await page.waitForURL('https://island.local/index.html')
   await page.waitForFunction(() => !!window.desktop)
+  let snapshot
   for (let i = 0; i < 60; i++) {
-    if ((await page.evaluate(() => window.desktop.getActivity())).notificationAccess !== 'unknown') break
+    snapshot = await page.evaluate(() => window.desktop.getActivity())
+    if (process.env.CI || snapshot.audio.availability === 'available') break
     await delay(500)
   }
-  const snapshot = await page.evaluate(() => window.desktop.getActivity())
   assert.equal(snapshot.bridge, 'ready')
+  assert.deepEqual(snapshot.preferences, { media: true, volume: true, sound: false })
   if (!process.env.CI) assert.equal(snapshot.audio.availability, 'available')
-  assert.equal(snapshot.notificationAccess, 'requires-package')
   await page.waitForSelector('[data-island]')
   await page.screenshot({ path: 'test-results/webview-compact.png', omitBackground: true })
   if (!process.env.CI) capture('webview-desktop-after')
   if (!process.env.CI) execFileSync('pwsh', ['-NoProfile', '-File', 'scripts/test-overlay-hit.ps1', '-HostProcessId', String(child.pid)], { windowsHide: true, stdio: 'inherit' })
   const send = command => page.evaluate(value => window.desktop.command(value), command)
+  for (const command of [{ type: 'notification-access' }, { type: 'notification-dismiss' }, { type: 'preferences', value: { notifications: true } }]) assert.equal((await send(command)).ok, false)
   const waitSnapshot = async predicate => {
     for (let i = 0; i < 60; i++) {
       const value = await page.evaluate(() => window.desktop.getActivity())
@@ -77,10 +81,6 @@ try {
     await delay(400)
     await assertPanelFits(page, `WebView2 ${name}`)
   }
-  await page.getByRole('button', { name: 'Notifikasi', exact: true }).click()
-  await page.getByText('Notifikasi Windows memerlukan versi MSIX.', { exact: false }).waitFor()
-  await assertPanelFits(page, 'WebView2 Notifikasi')
-  assert.equal(await page.getByRole('button', { name: 'Izinkan notifikasi', exact: true }).count(), 0)
   await page.getByRole('button', { name: 'Timer', exact: true }).click()
   await page.screenshot({ path: 'test-results/webview-expanded.png', omitBackground: true })
   await page.keyboard.press('Escape')

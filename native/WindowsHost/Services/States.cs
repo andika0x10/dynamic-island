@@ -7,4 +7,3 @@ public record MediaState(string Availability = "unavailable", string Title = "",
     public static MediaState Empty => new(Controls: new());
 }
 public record AudioState(string Availability = "unavailable", double Volume = 0, bool Muted = false, string Device = "");
-public record NotificationState(string Id, string App, string Title, string Body, long ReceivedAt);

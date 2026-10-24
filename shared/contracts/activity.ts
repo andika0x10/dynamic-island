@@ -13,17 +13,13 @@ export type MediaSnapshot = {
   controls: { play: boolean; pause: boolean; previous: boolean; next: boolean; seek: boolean }
 }
 export type AudioSnapshot = { availability: Availability; volume: number; muted: boolean; device: string }
-export type NotificationSnapshot = { id: string; app: string; title: string; body: string; receivedAt: number }
-export type NotificationAccess = 'unknown' | 'allowed' | 'denied' | 'requires-package' | 'unavailable'
 export type TimerSnapshot = { status: 'idle' | 'running' | 'paused' | 'finished'; duration: number; remaining: number; deadline: number | null }
-export type Preferences = { media: boolean; volume: boolean; notifications: boolean; sound: boolean }
+export type Preferences = { media: boolean; volume: boolean; sound: boolean }
 export type ActivitySnapshot = {
   battery: BatterySnapshot
   media: MediaSnapshot
   audio: AudioSnapshot
   timer: TimerSnapshot
-  notification: NotificationSnapshot | null
-  notificationAccess: NotificationAccess
   preferences: Preferences
   bridge: 'starting' | 'ready' | 'unavailable'
 }
@@ -34,7 +30,6 @@ export type DesktopCommand =
   | { type: 'mute'; muted: boolean }
   | { type: 'timer-start'; seconds: number }
   | { type: 'timer-pause' | 'timer-resume' | 'timer-cancel' }
-  | { type: 'notification-access' | 'notification-dismiss' }
   | { type: 'preferences'; value: Partial<Preferences> }
 
 export type CommandResult = { ok: boolean; error?: string }
@@ -45,11 +40,11 @@ export const emptyMedia: MediaSnapshot = {
 }
 export const emptyAudio: AudioSnapshot = { availability: 'unavailable', volume: 0, muted: false, device: '' }
 export const emptyTimer: TimerSnapshot = { status: 'idle', duration: 0, remaining: 0, deadline: null }
-export const defaultPreferences: Preferences = { media: true, volume: true, notifications: false, sound: true }
+export const defaultPreferences: Preferences = { media: true, volume: true, sound: true }
 export const initialActivity: ActivitySnapshot = {
   battery: { availability: 'unavailable', percentage: null, source: 'unknown', charging: 'unknown' },
-  media: emptyMedia, audio: emptyAudio, timer: emptyTimer, notification: null,
-  notificationAccess: 'unknown', preferences: defaultPreferences, bridge: 'starting',
+  media: emptyMedia, audio: emptyAudio, timer: emptyTimer,
+  preferences: defaultPreferences, bridge: 'starting',
 }
 
 export function isDesktopCommand(value: unknown): value is DesktopCommand {
@@ -63,9 +58,8 @@ export function isDesktopCommand(value: unknown): value is DesktopCommand {
     case 'mute': return typeof command.muted === 'boolean'
     case 'timer-start': return finite(command.seconds, 1, 86400) && Number.isInteger(command.seconds)
     case 'preferences': return !!command.value && typeof command.value === 'object' && !Array.isArray(command.value)
-      && Object.entries(command.value).every(([key, item]) => ['media', 'volume', 'notifications', 'sound'].includes(key) && typeof item === 'boolean')
-    case 'timer-pause': case 'timer-resume': case 'timer-cancel':
-    case 'notification-access': case 'notification-dismiss': return true
+      && Object.entries(command.value).every(([key, item]) => ['media', 'volume', 'sound'].includes(key) && typeof item === 'boolean')
+    case 'timer-pause': case 'timer-resume': case 'timer-cancel': return true
     default: return false
   }
 }

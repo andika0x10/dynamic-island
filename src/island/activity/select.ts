@@ -1,5 +1,5 @@
 import type { ActivitySnapshot } from '../../../shared/contracts/activity.ts'
-export type ActivityKind = 'battery' | 'media' | 'timer' | 'volume' | 'notification'
+export type ActivityKind = 'battery' | 'media' | 'timer' | 'volume'
 export type Transient = { kind: ActivityKind; until: number } | null
 export function activeKinds(snapshot: ActivitySnapshot): ActivityKind[] {
   const kinds: ActivityKind[] = []

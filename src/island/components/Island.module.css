@@ -5,7 +5,7 @@
 .low { --accent: #ff453a; }
 .media { --accent: #ff6482; }
 .timer { --accent: #ff9f0a; }
-.volume, .notification { --accent: #f5f5f7; }
+.volume { --accent: #f5f5f7; }
 .trigger { height: 39px; display: flex; align-items: center; gap: 10px; padding: 0 16px; width: 100%; background: none; color: inherit; border: none; cursor: pointer; text-align: left; }
 .trigger[aria-expanded='true'] { height: 37px; padding: 0 24px; color: var(--secondary); }
 .glyph { display: flex; align-items: center; color: var(--accent); flex: none; }

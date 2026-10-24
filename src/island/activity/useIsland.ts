@@ -15,12 +15,10 @@ export function useIsland(snapshot: ActivitySnapshot) {
     if (before.battery.source !== 'unknown' && snapshot.battery.source !== 'unknown' && before.battery.source !== snapshot.battery.source) notice = { kind: 'battery', until: Date.now() + 4000 }
     if (snapshot.preferences.volume && before.audio.availability === 'available' && snapshot.audio.availability === 'available'
       && (Math.abs(before.audio.volume - snapshot.audio.volume) > .001 || before.audio.muted !== snapshot.audio.muted)) notice = { kind: 'volume', until: Date.now() + 3000 }
-    if (snapshot.preferences.notifications && snapshot.notification && before.notification?.id !== snapshot.notification.id) notice = { kind: 'notification', until: Date.now() + 6000 }
     if (before.timer.status !== 'finished' && snapshot.timer.status === 'finished') notice = { kind: 'timer', until: Date.now() + 10000 }
     if (notice) setTransient(notice)
     if (pinned === 'media' && (!snapshot.preferences.media || snapshot.media.availability !== 'available')) setPinned(null)
     if (pinned === 'volume' && !snapshot.preferences.volume) setPinned(null)
-    if (!snapshot.notification && transient?.kind === 'notification') setTransient(null)
   }, [snapshot, pinned, transient?.kind])
   const close = () => { setPinned(null); setTransient(null) }
   useEffect(() => {

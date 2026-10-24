@@ -13,7 +13,6 @@
     "build:native": "node scripts/build-host.mjs",
     "start": "node scripts/start.mjs",
     "pack": "npm run build && node scripts/stage-host.mjs",
-    "pack:msix": "npm run pack && pwsh -NoLogo -NoProfile -File scripts/package-msix.ps1",
     "test": "node --test tests/*.test.ts",
     "test:media": "node scripts/test-media.mjs",
     "test:startup": "pwsh -NoLogo -NoProfile -File scripts/test-startup.ps1",
@@ -22,7 +21,7 @@
     "test:ui": "node scripts/test-panel-ui.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
-    "dist:win": "npm run pack && electron-builder --win nsis zip --x64 --prepackaged release/webview-unpacked --publish never"
+    "dist:win": "npm run pack && electron-builder --win nsis --x64 --prepackaged release/webview-unpacked --publish never"
   },
   "build": {
     "appId": "com.andika.dynamicisland",

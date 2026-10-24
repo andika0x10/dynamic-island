@@ -20,6 +20,8 @@ jobs:
     name: Test and package Windows x64
     runs-on: windows-2025
     timeout-minutes: 30
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -42,7 +44,6 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run test:startup
-      - run: npm run test:media
       - name: Unit tests
         shell: pwsh
         run: |
@@ -55,29 +56,8 @@ jobs:
           }
       - name: Panel UI regression test
         run: npm run test:ui
-      - name: Build Windows application
-        run: npm run pack
-      - name: Package MSIX (signed for releases)
-        shell: pwsh
-        env:
-          MSIX_CERTIFICATE_BASE64: ${{ secrets.MSIX_CERTIFICATE_BASE64 }}
-          MSIX_CERTIFICATE_PASSWORD: ${{ secrets.MSIX_CERTIFICATE_PASSWORD }}
-          MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER || 'CN=Andika' }}
-          MSIX_TIMESTAMP_URL: ${{ vars.MSIX_TIMESTAMP_URL || 'http://timestamp.digicert.com' }}
-        run: |
-          $certificatePath = Join-Path $env:RUNNER_TEMP 'dynamic-island-signing.pfx'
-          try {
-            if ($env:MSIX_CERTIFICATE_BASE64) {
-              [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:MSIX_CERTIFICATE_BASE64))
-              $env:MSIX_CERTIFICATE_PATH = $certificatePath
-            } elseif ($env:GITHUB_REF -like 'refs/tags/*') {
-              throw 'Release requires MSIX_CERTIFICATE_BASE64 and MSIX_CERTIFICATE_PASSWORD repository secrets. See docs/DEVELOPMENT.md.'
-            }
-            ./scripts/package-msix.ps1 -Publisher $env:MSIX_PUBLISHER
-          } finally {
-            if (Test-Path -LiteralPath $certificatePath) { Remove-Item -LiteralPath $certificatePath -Force }
-            Remove-Item Env:MSIX_CERTIFICATE_PATH -ErrorAction SilentlyContinue
-          }
+      - name: Build installer
+        run: npm run dist:win
       - name: Ensure WebView2 Runtime on the CI runner
         shell: pwsh
         run: |
@@ -89,26 +69,24 @@ jobs:
         shell: pwsh
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          $msix = Get-Item -LiteralPath "release/Dynamic-Island-$version-x64.msix"
-          Write-Host ("MSIX: {0:N2} MB ({1} bytes)" -f ($msix.Length / 1000000), $msix.Length)
-          if ($msix.Length -ge 5000000) { throw 'MSIX must be below 5 MB' }
+          $installer = Get-Item -LiteralPath "release/Dynamic-Island-$version-x64-setup.exe"
+          Write-Host ("Installer: {0:N2} MB ({1} bytes)" -f ($installer.Length / 1000000), $installer.Length)
+          if ($installer.Length -ge 5000000) { throw 'Installer must be below 5 MB' }
       - name: Generate SHA256 checksums
         shell: pwsh
         run: |
-          $files = @(Get-ChildItem release -File | Where-Object Extension -in '.msix', '.cer' | Sort-Object Name)
-          if (@($files | Where-Object Extension -eq '.msix').Count -ne 1) { throw 'Expected one MSIX' }
-          if ($env:GITHUB_REF -like 'refs/tags/*' -and @($files | Where-Object Extension -eq '.cer').Count -ne 1) { throw 'Expected public signing certificate' }
+          $files = Get-ChildItem release -File | Where-Object Extension -eq '.exe' | Sort-Object Name
+          if (@($files).Count -ne 1) { throw 'Expected one installer' }
           $files | ForEach-Object {
             $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
             "$hash  $($_.Name)"
           } | Set-Content release/SHA256SUMS.txt -Encoding utf8
-      - name: Upload MSIX
+      - name: Upload installer
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: dynamic-island-windows-x64-msix
+          name: dynamic-island-windows-x64-installer
           path: |
-            release/*.msix
-            release/*.cer
+            release/*.exe
             release/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
@@ -135,33 +113,31 @@ jobs:
     steps:
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
-          name: dynamic-island-windows-x64-msix
+          pattern: dynamic-island-windows-x64-*
+          merge-multiple: true
           path: release
-      - name: Publish MSIX and checksums
+      - name: Publish installer and checksums
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
           RELEASE_INSTALL_NOTES: |
-            ### Instalasi MSIX self-signed
-            1. Unduh `DynamicIsland.cer` dan paket `.msix` dari rilis ini.
-            2. Buka PowerShell sebagai Administrator di folder unduhan, lalu jalankan:
-               `Import-Certificate -FilePath .\DynamicIsland.cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople`
-            3. Pastikan WebView2 Runtime tersedia, lalu buka MSIX melalui App Installer dan pilih Install.
+            Unduh dan jalankan installer EXE. WebView2 akan dipasang bila diperlukan. Startup otomatis dapat diatur melalui menu tray.
 
-            Impor sertifikat hanya diperlukan sekali untuk sertifikat yang sama. SHA256SUMS.txt tersedia untuk memeriksa integritas unduhan.
+            Untuk berpindah dari paket MSIX lama: uninstall Dynamic Island versi MSIX melalui Settings → Apps terlebih dahulu, lalu pasang installer EXE. Musik, volume, timer, dan baterai tetap tersedia; fitur pembaca notifikasi Windows telah dihapus.
         shell: bash
         run: |
           set -euo pipefail
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" release/*.msix release/*.cer release/SHA256SUMS.txt --clobber
+            gh release upload "$RELEASE_TAG" release/*.exe release/SHA256SUMS.txt --clobber
+            gh release edit "$RELEASE_TAG" --notes "$RELEASE_INSTALL_NOTES"
             while IFS= read -r asset; do
               case "$asset" in
-                *.exe|*.zip|*.blockmap|latest.yml) gh release delete-asset "$RELEASE_TAG" "$asset" --yes ;;
+                *.msix|*.cer|*.zip|*.blockmap|latest.yml) gh release delete-asset "$RELEASE_TAG" "$asset" --yes ;;
               esac
             done < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
           else
             args=(--verify-tag --generate-notes --notes "$RELEASE_INSTALL_NOTES" --title "Dynamic Island $RELEASE_TAG")
             if [[ "$RELEASE_TAG" == *-* ]]; then args+=(--prerelease); fi
-            gh release create "$RELEASE_TAG" release/*.msix release/*.cer release/SHA256SUMS.txt "${args[@]}"
+            gh release create "$RELEASE_TAG" release/*.exe release/SHA256SUMS.txt "${args[@]}"
           fi

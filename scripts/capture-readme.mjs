@@ -16,7 +16,7 @@ try {
       media: { availability: 'available', title: 'Midnight City', artist: 'M83', artwork: null, playing: true, position: 68, duration: 244, updatedAt: Date.now(), controls: { play: true, pause: true, previous: true, next: true, seek: true } },
       audio: { availability: 'available', volume: .42, muted: false, device: 'Speakers' },
       timer: { status: 'running', duration: 300, remaining: 280, deadline: Date.now() + 280000 },
-      notification: null, notificationAccess: 'unknown', preferences: { media: true, volume: true, notifications: false, sound: true }, bridge: 'ready',
+      preferences: { media: true, volume: true, sound: true }, bridge: 'ready',
     }
     window.desktop = { getActivity: async () => snapshot, onActivity: () => () => {}, setClickThrough() {}, command: async () => ({ ok: true }) }
   })

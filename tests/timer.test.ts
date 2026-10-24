@@ -12,6 +12,6 @@ test('timer UI uses deadlines and preserves paused remaining time', () => {
 })
 
 test('IPC rejects arbitrary commands and unsafe payloads', () => {
-  for (const value of [null, [], { type: 'open-settings' }, { type: 'shell' }, { type: 'volume', volume: 2 }, { type: 'seek', position: NaN }, { type: 'timer-start', seconds: .5 }, { type: 'preferences', value: { admin: true } }]) assert.equal(isDesktopCommand(value), false)
+  for (const value of [null, [], { type: 'open-settings' }, { type: 'shell' }, { type: 'volume', volume: 2 }, { type: 'seek', position: NaN }, { type: 'timer-start', seconds: .5 }, { type: 'preferences', value: { admin: true } }, { type: 'notification-access' }, { type: 'notification-dismiss' }, { type: 'preferences', value: { notifications: true } }]) assert.equal(isDesktopCommand(value), false)
   for (const value of [{ type: 'timer-start', seconds: 60 }, { type: 'mute', muted: true }, { type: 'preferences', value: { sound: false } }]) assert.equal(isDesktopCommand(value), true)
 })
