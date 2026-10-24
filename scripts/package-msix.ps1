@@ -3,7 +3,8 @@ param(
   [string]$SignTool = $env:SIGNTOOL_PATH,
   [string]$Publisher = 'CN=Andika',
   [string]$CertificatePath = $env:MSIX_CERTIFICATE_PATH,
-  [string]$CertificatePassword = $env:MSIX_CERTIFICATE_PASSWORD
+  [string]$CertificatePassword = $env:MSIX_CERTIFICATE_PASSWORD,
+  [string]$TimestampUrl = $env:MSIX_TIMESTAMP_URL
 )
 $ErrorActionPreference = 'Stop'
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -51,8 +52,20 @@ if ($CertificatePath) {
   if (-not (Test-Path -LiteralPath $SignTool)) { throw 'Set SIGNTOOL_PATH to SignTool.exe to sign the package.' }
   $signArguments = @('sign', '/fd', 'SHA256', '/f', $CertificatePath)
   if ($CertificatePassword) { $signArguments += @('/p', $CertificatePassword) }
+  if ($TimestampUrl) { $signArguments += @('/tr', $TimestampUrl, '/td', 'SHA256') }
   $signArguments += $output
   & $SignTool @signArguments
   if ($LASTEXITCODE -ne 0) { throw 'MSIX signing failed. Certificate subject must match Publisher.' }
+  $signature = Get-AuthenticodeSignature -LiteralPath $output
+  if (-not $signature.SignerCertificate) { throw 'MSIX signature is missing' }
+  $signer = $signature.SignerCertificate
+  # WinVerifyTrust reports CERT_E_UNTRUSTEDROOT as UnknownError for MSIX.
+  # Accept only that exact localized error for self-signed certificates; reject all other failures.
+  $untrustedRootMessage = [ComponentModel.Win32Exception]::new(-2146762487).Message
+  $selfSignedUntrusted = $signer.Subject -eq $signer.Issuer -and $signature.StatusMessage -eq $untrustedRootMessage
+  if ($signature.Status -ne 'Valid' -and -not $selfSignedUntrusted) {
+    throw "MSIX signature verification failed: $($signature.StatusMessage)"
+  }
+  Export-Certificate -Cert $signer -FilePath (Join-Path $workspace 'release/DynamicIsland.cer') -Force | Out-Null
   Write-Host "Signed MSIX: $output"
 } else { Write-Host "Unsigned MSIX: $output — sign with a certificate matching '$Publisher' before installation." }

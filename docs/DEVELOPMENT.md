@@ -58,7 +58,7 @@ Notifikasi memerlukan identitas MSIX dan izin Windows serta dinonaktifkan secara
 
 ## GitHub Release
 
-Workflow berjalan pada push `main`/`master`, PR, tag `v*`, atau manual. CI menjalankan lint, unit test, build, dan smoke test pada executable terpaket. Installer dan ZIP masing-masing harus di bawah 5 MB. Artifact installer/checksum dan ZIP dipisah, disimpan 14 hari; screenshot disimpan 7 hari.
+Workflow berjalan pada push `main`/`master`, PR, tag `v*`, atau manual. CI menjalankan lint, unit test, build, packaging MSIX, dan smoke test pada executable staging. MSIX harus di bawah 5 MB. Artifact MSIX/checksum disimpan 14 hari; screenshot disimpan 7 hari. Build tanpa secret boleh menghasilkan MSIX unsigned untuk pemeriksaan, tetapi rilis bertag wajib ditandatangani.
 
 Untuk rilis, ubah versi package/lockfile, commit, push, dan push tag `v` + versi package. Contoh versi berikutnya:
 
@@ -71,12 +71,49 @@ git tag v0.2.4
 git push origin v0.2.4
 ```
 
-Setelah pemeriksaan lulus, tag push menerbitkan Release dengan installer, ZIP, checksum SHA256, dan release notes. Push branch/manual hanya menghasilkan artifact.
+Setelah pemeriksaan lulus, tag push menerbitkan Release dengan MSIX, sertifikat publik DynamicIsland.cer, checksum SHA256, dan release notes. Push branch/manual hanya menghasilkan artifact. Ketika workflow mengunggah ulang tag yang sudah memiliki Release, aset installer/ZIP lama dihapus setelah MSIX berhasil diunggah. Release historis lain tidak diubah.
 
 ## MSIX dan signing
 
 Manifest mendeklarasikan `runFullTrust`, `globalMediaControl`, dan `userNotificationListener`. Skrip MSIX memakai versi package saat ini dan mencari MakeAppx di Windows SDK atau `.tools/windows-sdk`; `MAKEAPPX_PATH` dapat menentukan lokasi lain. Output unsigned secara default.
 
-Signing opsional memakai `MSIX_CERTIFICATE_PATH`, `MSIX_CERTIFICATE_PASSWORD`, dan `SIGNTOOL_PATH`. Subject sertifikat harus cocok dengan publisher; gunakan `-Publisher` untuk mengubahnya. Skrip tidak membuat sertifikat, mengubah trust store, atau memasang paket. Jangan commit sertifikat/kunci. Pengguna MSIX tetap membutuhkan WebView2.
+Signing lokal memakai `MSIX_CERTIFICATE_PATH`, `MSIX_CERTIFICATE_PASSWORD`, dan `SIGNTOOL_PATH`. Subject sertifikat harus cocok dengan publisher; gunakan `-Publisher` untuk mengubahnya. `MSIX_TIMESTAMP_URL` mengaktifkan timestamp RFC 3161. Skrip tidak membuat sertifikat, mengubah trust store, atau memasang paket. Verifikasi signature menerima error untrusted root untuk sertifikat self-signed; kegagalan signature lain menghentikan packaging. Jangan commit sertifikat/kunci. Pengguna MSIX tetap membutuhkan WebView2 dan App Installer.
+
+### Setup GitHub Actions
+
+Di repository **Settings → Secrets and variables → Actions**, siapkan:
+
+| Jenis | Nama | Nilai |
+| --- | --- | --- |
+| Secret | `MSIX_CERTIFICATE_BASE64` | Isi PFX (termasuk private key) dalam Base64 |
+| Secret | `MSIX_CERTIFICATE_PASSWORD` | Password PFX |
+| Variable | `MSIX_PUBLISHER` | Subject sertifikat; default `CN=Andika` |
+| Variable | `MSIX_TIMESTAMP_URL` | Server timestamp; default `http://timestamp.digicert.com` |
+
+Runner `windows-2025` menyediakan Windows SDK (MakeAppx/SignTool); workflow memasang Node.js 24 dan .NET 10. PFX hanya ditulis ke folder sementara runner dan dihapus setelah packaging. Jangan memasukkan secret ke PR dari sumber yang tidak dipercaya.
+
+Untuk pengujian pribadi, buat sertifikat self-signed satu kali di PowerShell. Simpan PFX dan password yang sama untuk rilis berikutnya, serta backup di tempat aman:
+
+```powershell
+$signingDirectory = Join-Path $env:USERPROFILE 'DynamicIslandSigning'
+New-Item -ItemType Directory -Path $signingDirectory -Force | Out-Null
+$certificate = New-SelfSignedCertificate -Type Custom -Subject 'CN=Andika' -FriendlyName 'Dynamic Island MSIX' -KeyUsage DigitalSignature -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -KeyExportPolicy Exportable -CertStoreLocation 'Cert:\CurrentUser\My' -NotAfter (Get-Date).AddYears(2) -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3', '2.5.29.19={text}')
+$password = Read-Host 'Password PFX' -AsSecureString
+$pfxPath = Join-Path $signingDirectory 'DynamicIsland.pfx'
+Export-PfxCertificate -Cert $certificate -FilePath $pfxPath -Password $password | Out-Null
+Export-Certificate -Cert $certificate -FilePath (Join-Path $signingDirectory 'DynamicIsland.cer') | Out-Null
+[Convert]::ToBase64String([IO.File]::ReadAllBytes($pfxPath)) | Set-Clipboard
+# Paste clipboard ke secret MSIX_CERTIFICATE_BASE64, lalu kosongkan clipboard.
+```
+
+Sertifikat self-signed tidak otomatis dipercaya komputer pengguna. Workflow menyertakan file publik `DynamicIsland.cer` pada Release; private key tetap hanya di Actions secret dan backup lokal. Di komputer tujuan, jalankan PowerShell **sebagai Administrator** untuk mempercayai sertifikat penerbit, lalu pasang paket sebagai pengguna biasa:
+
+```powershell
+Import-Certificate -FilePath .\DynamicIsland.cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople
+# Jalankan perintah berikut di PowerShell biasa:
+Add-AppxPackage -Path .\Dynamic-Island-0.2.5-x64.msix
+```
+
+Untuk distribusi publik tanpa impor sertifikat manual, gunakan sertifikat code signing yang dipercaya Windows atau layanan signing yang sesuai; publisher manifest harus mengikuti subject sertifikat tersebut. MSIX unsigned hasil build lokal tidak bisa langsung diinstal. Smoke test CI memeriksa host staging, belum membuktikan pemasangan MSIX, startup, atau izin notifikasi; periksa hal tersebut pada paket terpasang sebelum rilis publik.
 
 Referensi: [distribusi WebView2](https://learn.microsoft.com/microsoft-edge/webview2/concepts/distribution), [.NET Framework pada Windows](https://learn.microsoft.com/dotnet/framework/install/versions-and-dependencies), [GSMTC](https://learn.microsoft.com/uwp/api/windows.media.control.globalsystemmediatransportcontrolssessionmanager), [Core Audio](https://learn.microsoft.com/windows/win32/api/endpointvolume/nn-endpointvolume-iaudioendpointvolume).

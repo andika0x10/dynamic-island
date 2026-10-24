@@ -22,12 +22,13 @@ Dua aktivitas bisa tampil bersamaan. Gunakan ikon tray untuk menampilkan, menyem
 
 Butuh **Windows 10 versi 2004+ atau Windows 11 (64-bit)**.
 
-1. Unduh **installer** atau **ZIP** dari [rilis terbaru](https://github.com/andika0x10/dynamic-island/releases/latest).
-2. Jalankan installer, atau ekstrak seluruh ZIP lalu buka `Dynamic Island.exe`.
+1. Pasang [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) bila belum tersedia.
+2. Unduh **MSIX** dari [rilis terbaru](https://github.com/andika0x10/dynamic-island/releases/latest), lalu buka dengan **App Installer** dan pilih **Install**.
+3. Jalankan **Dynamic Island** dari Start Menu.
 
 Aplikasi otomatis berjalan saat login Windows setelah instalasi, atau setelah ZIP pertama kali dijalankan. Untuk mematikannya, klik kanan ikon tray lalu nonaktifkan **Jalankan saat login Windows**. Pilihan ini tetap tersimpan saat aplikasi diperbarui. Simpan folder ZIP di lokasi tetap agar startup tetap berfungsi.
 
-Installer akan mengunduh WebView2 jika belum tersedia. Untuk versi ZIP, pasang [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) bila diperlukan. Aplikasi belum ditandatangani, sehingga Windows dapat menampilkan SmartScreen.
+MSIX harus memiliki signature yang dipercaya Windows. Unduh `DynamicIsland.cer` dari rilis yang sama, lalu pasang ke **Local Machine → Trusted People** sebelum memasang MSIX self-signed. Langkah ini hanya perlu dilakukan sekali untuk sertifikat yang sama. Lihat [panduan MSIX dan signing](docs/DEVELOPMENT.md#msix-dan-signing).
 
 ## Jalankan dari source
 
