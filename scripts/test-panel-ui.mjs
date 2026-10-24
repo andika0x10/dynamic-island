@@ -47,6 +47,19 @@ try {
     sample()
   })
   await page.getByRole('button', { name: 'Buka Musik', exact: true }).click()
+  await page.evaluate(async () => {
+    const snapshot = await window.desktop.getActivity()
+    window.testSnapshot({ media: { ...snapshot.media, duration: 0, position: 30, updatedAt: Date.now() } })
+  })
+  await page.getByRole('status').filter({ hasText: /diputar/ }).waitFor()
+  assert.equal(await page.getByRole('slider', { name: 'Posisi pemutaran' }).count(), 0)
+  assert.equal(await page.getByText('Durasi tidak tersedia', { exact: true }).count(), 0)
+  await assertPanelFits(page, 'Music without total duration')
+  await page.evaluate(async () => {
+    const snapshot = await window.desktop.getActivity()
+    window.testSnapshot({ media: { ...snapshot.media, duration: 244 } })
+  })
+  await page.getByRole('slider', { name: 'Posisi pemutaran' }).waitFor()
   for (const [name, heading] of [['Timer', 'Timer'], ['Volume', 'Volume'], ['Baterai', 'Baterai'], ['Musik', 'Music'], ['Notifikasi', 'Notifikasi belum aktif']]) {
     await page.getByRole('button', { name, exact: true }).click()
     if (name === 'Timer') await page.getByRole('button', { name: 'Mulai timer', exact: true }).waitFor()

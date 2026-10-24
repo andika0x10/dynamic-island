@@ -26,6 +26,7 @@ npm run dev
 | `npm run typecheck` | Periksa tipe UI dan konfigurasi Vite |
 | `npm run lint` | Oxlint |
 | `npm test` | Regresi pemilihan aktivitas, kontrak command, timeline media, dan sisa waktu timer |
+| `npm run test:media` | Regresi refresh cover, retry thumbnail terlambat, dan cache durasi persisten |
 | `npm run test:ui` | Regresi animasi panel, scrollbar, dan alur notifikasi dengan data simulasi |
 | `npm run test:startup` | Integrasi registry startup, opt-out, pindah lokasi, dan uninstall pada key sementara |
 | `npm run build` | Build Vite dan WindowsHost |
@@ -51,6 +52,8 @@ Auto startup aktif secara default melalui nilai `Dynamic Island` di `HKCU\Softwa
 Installer menjalankan `--ensure-webview`. Jika runtime tersedia, tidak ada unduhan tambahan. Jika belum, host mengunduh bootstrapper resmi Microsoft melalui HTTPS, memverifikasi kepercayaan Authenticode dan publisher Microsoft, lalu menjalankan `/silent /install`. Kegagalan menghentikan pemasangan dengan petunjuk mencoba kembali. Jalur runtime-belum-terpasang masih memerlukan verifikasi pada Windows bersih; lokal memakai runtime yang sudah tersedia. ZIP memerlukan WebView2 terpasang. Installer aplikasi belum ditandatangani sehingga SmartScreen dapat muncul.
 
 Profil `%APPDATA%/dynamic-island` kompatibel dengan versi sebelumnya; `ISLAND_PROFILE_DIR` memilih profil lain. Preferensi/timer disimpan melalui penggantian file atomik. Timer memakai deadline UTC, pulih setelah restart/sleep, dan memakai suara sistem ketika selesai. Baterai dibaca langsung melalui Win32 tanpa PowerShell. Media/audio dipoll setiap 500 ms tanpa tumpang tindih.
+
+Cover musik dibaca ulang setiap 2 detik walaupun metadata sama; thumbnail kosong/gagal dicoba lagi pada polling berikutnya. Pergantian lagu menghapus cover sebelumnya. Durasi yang dilaporkan pemutar dihitung dari `EndTime - StartTime` dan disimpan di `media-durations.json` (maksimal 256 lagu, dibedakan menurut aplikasi, judul, artis, album, dan nomor track). Cache dipakai saat pemutar sementara tidak menyediakan durasi, termasuk setelah restart dan saat seek. Lagu tanpa judul tidak memakai cache. Jika total durasi belum diketahui, UI menampilkan waktu diputar tanpa slider atau estimasi durasi total.
 
 Window maksimum 460 × 320 DIP, 12 DIP dari sisi atas work area monitor utama. Area kosong dan sudut membulat meneruskan klik; host memeriksa cursor terhadap DOM karena WebView2 tidak meneruskan mousemove selama click-through. Tray menyediakan Tampilkan, Sembunyikan, Keluar; instance kedua menampilkan instance pertama.
 

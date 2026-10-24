@@ -5,7 +5,7 @@ import { Button, ErrorMessage } from '../../shared/ui/Button.tsx'
 import { clock } from '../../shared/ui/format.ts'
 import { useNow } from '../../shared/hooks/useNow.ts'
 import { useCommand } from '../../shared/hooks/useCommand.ts'
-import { mediaTimeline } from './timeline.ts'
+import { mediaPosition, mediaTimeline } from './timeline.ts'
 import styles from './Media.module.css'
 import ui from '../../shared/ui/Controls.module.css'
 
@@ -27,7 +27,7 @@ export function MediaPanel({ media }: { media: MediaSnapshot }) {
       onChange={event => setScrub(Number(event.target.value))} onPointerUp={event => { void run({ type: 'seek', position: Number(event.currentTarget.value) }); setScrub(null) }}
       onKeyUp={event => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { void run({ type: 'seek', position: Number(event.currentTarget.value) }); setScrub(null) } }} onBlur={() => setScrub(null)}/>
     <div className={ui.row}><span className={ui.caption}>{clock(position)}</span><span className={ui.caption}>−{clock(timeline.duration - position)}</span></div></>
-      : <p className={ui.caption} role="status">Durasi tidak tersedia</p>}
+      : <p className={ui.caption} role="status">{clock(mediaPosition(media, now))} diputar</p>}
     <div className={styles.transport}>
       <Button icon aria-label="Lagu sebelumnya" disabled={!media.controls.previous || pending} onClick={() => void run({ type: 'media', action: 'previous' })}><Icon name="previous"/></Button>
       <Button icon primary aria-label={media.playing ? 'Jeda musik' : 'Putar musik'} disabled={pending || !(media.playing ? media.controls.pause : media.controls.play)} onClick={() => void run({ type: 'media', action: media.playing ? 'pause' : 'play' })}><Icon name={media.playing ? 'pause' : 'play'} size={26}/></Button>

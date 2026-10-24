@@ -42,6 +42,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run test:startup
+      - run: npm run test:media
       - name: Unit tests
         shell: pwsh
         run: |

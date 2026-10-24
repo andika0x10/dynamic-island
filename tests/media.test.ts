@@ -1,7 +1,15 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { emptyMedia } from '../shared/contracts/activity.ts'
-import { mediaTimeline } from '../src/features/media/timeline.ts'
+import { mediaPosition, mediaTimeline } from '../src/features/media/timeline.ts'
+
+test('elapsed playback remains available without a reported total duration', () => {
+  const media = { ...emptyMedia, position: 30, updatedAt: 10000, playing: true }
+  assert.equal(mediaPosition(media, 12000), 32)
+  assert.equal(mediaPosition({ ...media, playing: false }, 12000), 30)
+  assert.equal(mediaPosition({ ...media, position: NaN, updatedAt: 0 }, 12000), 0)
+  assert.equal(mediaPosition({ ...media, position: -5 }, 9000), 0)
+})
 
 test('missing media timing is unavailable, rather than a zero-length track', () => {
   for (const duration of [0, -1, NaN, Infinity]) {

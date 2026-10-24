@@ -14,7 +14,7 @@ internal sealed record CommandResult(bool Ok, string? Error = null);
 internal sealed class ActivityService : IDisposable
 {
     internal static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-    private readonly MediaService media = new();
+    private readonly MediaService media;
     private readonly AudioService audio = new();
     private readonly NotificationService notifications = new();
     private readonly HashSet<string> dismissed = new();
@@ -29,6 +29,7 @@ internal sealed class ActivityService : IDisposable
 
     internal ActivityService(string profile)
     {
+        media = new MediaService(profile);
         file = Path.Combine(profile, "settings.json");
         var preferences = new Preferences();
         var timer = new TimerState();
