@@ -4,7 +4,11 @@ export async function assertPanelFits(page, label) {
   await page.waitForFunction(() => {
     const shell = document.querySelector('[data-island]')
     const body = document.querySelector('[data-panel-body]')
-    return body && Math.abs(shell.getBoundingClientRect().height - (body.getBoundingClientRect().height + 103)) < 1
+    if (!body) return false
+    const style = getComputedStyle(body.parentElement)
+    const offset = new DOMMatrixReadOnly(style.transform).m42
+    return Number(style.opacity) > .99 && Math.abs(offset) < .1
+      && Math.abs(shell.getBoundingClientRect().height - (body.getBoundingClientRect().height + 103)) < 1
   })
   const layout = await page.evaluate(() => {
     const shell = document.querySelector('[data-island]').getBoundingClientRect()

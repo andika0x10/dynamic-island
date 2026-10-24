@@ -54,6 +54,8 @@ jobs:
             Write-Output "::error title=Unit tests::$details"
             exit 1
           }
+      - name: Panel UI regression test
+        run: npm run test:ui
       - name: Build installer and ZIP
         run: npm run dist:win
       - name: Ensure WebView2 Runtime on the CI runner

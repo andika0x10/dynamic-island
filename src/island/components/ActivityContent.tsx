@@ -27,6 +27,6 @@ export function ExpandedContent({ kind, snapshot }: { kind: ActivityKind; snapsh
     case 'media': return <MediaPanel media={snapshot.media}/>
     case 'timer': return <TimerPanel timer={snapshot.timer}/>
     case 'volume': return <VolumePanel audio={snapshot.audio}/>
-    case 'notification': return <NotificationPanel notification={snapshot.notification}/>
+    case 'notification': return <NotificationPanel snapshot={snapshot}/>
   }
 }

@@ -18,7 +18,7 @@ export function Island() {
   useHitTest()
   const { height: panelHeight, measure } = usePanelHeight(primary)
   const size = expanded ? { ...islandSizes.expanded, height: panelHeight } : islandSizes.compact
-  const kinds = Array.from(new Set([...activeKinds(snapshot), 'battery' as const, 'timer' as const, ...(snapshot.preferences.volume ? ['volume' as const] : [])]))
+  const kinds = Array.from(new Set([...activeKinds(snapshot), 'battery' as const, 'timer' as const, ...(snapshot.preferences.volume ? ['volume' as const] : []), 'notification' as const]))
   const low = snapshot.battery.percentage !== null && snapshot.battery.percentage <= 20 && snapshot.battery.charging !== 'charging'
   return <MotionConfig reducedMotion="user"><main className={styles.overlay}>
     <div className={styles.cluster}>

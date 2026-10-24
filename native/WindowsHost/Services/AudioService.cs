@@ -1,8 +1,6 @@
 using System.Runtime.InteropServices;
-using System.Diagnostics.CodeAnalysis;
-using WindowsBridge.Protocol;
 
-namespace WindowsBridge.Audio;
+namespace WindowsHost.Services;
 
 public sealed class AudioService
 {
@@ -15,12 +13,6 @@ public sealed class AudioService
     public void SetMute(bool value) => WithEndpoint((volume, _) => { volume.SetMute(value, Guid.Empty); return true; });
 
     // COM dispatch uses declaration order: retain even the unused vtable slots.
-#if NET8_0_OR_GREATER
-    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IMMDeviceEnumerator))]
-    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IMMDevice))]
-    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IAudioEndpointVolume))]
-    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IPropertyStore))]
-#endif
     private static T WithEndpoint<T>(Func<IAudioEndpointVolume, string, T> operation)
     {
         var enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();

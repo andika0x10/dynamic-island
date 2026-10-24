@@ -18,7 +18,7 @@ try {
       timer: { status: 'running', duration: 300, remaining: 280, deadline: Date.now() + 280000 },
       notification: null, notificationAccess: 'unknown', preferences: { media: true, volume: true, notifications: false, sound: true }, bridge: 'ready',
     }
-    window.desktop = { getActivity: async () => snapshot, getBattery: async () => snapshot.battery, onActivity: () => () => {}, onBattery: () => () => {}, setClickThrough() {}, command: async () => ({ ok: true }) }
+    window.desktop = { getActivity: async () => snapshot, onActivity: () => () => {}, setClickThrough() {}, command: async () => ({ ok: true }) }
   })
   const page = await context.newPage()
   const errors = []

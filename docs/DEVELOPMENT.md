@@ -6,7 +6,7 @@ UI memakai React, TypeScript, Vite, dan Motion. Host `native/WindowsHost` adalah
 
 `WindowsHost/Program.cs` menangani window transparan/topmost, monitor utama, DPI, tray, single instance, WebView2, dan IPC. `ActivityService.cs` menangani validasi command, preferensi, timer persisten, dan baterai lewat `GetSystemPowerStatus`. Clock timer terpisah dari polling media agar menunggu WinRT tidak menahan hitung mundur.
 
-Layanan GSMTC, Core Audio, dan notifikasi dipakai bersama dari `native/WindowsBridge/{Media,Audio,Notifications}`. Layanan berjalan langsung pada STA host. File Electron dan helper .NET 10 sebelumnya disimpan sebagai referensi dan untuk regresi logika TypeScript, tetapi tidak masuk distribusi v0.2.
+Layanan GSMTC, Core Audio, dan notifikasi berada di `native/WindowsHost/Services` dan berjalan langsung pada STA host. Implementasi Electron dan helper .NET 10 lama telah dihapus.
 
 `src/platform/webview.js` menyediakan kontrak `window.desktop` sebelum React berjalan. UI disajikan dari virtual origin `https://island.local`. Host menerima pesan hanya dari dokumen yang diizinkan, memvalidasi command, dan menolak navigasi, popup, permission, download, serta host objects. Tidak ada API shell/file generik. CSP membatasi resource. DevTools hanya aktif dengan `ISLAND_TEST=1`; smoke test memakai CDP localhost pada proses tes.
 
@@ -25,7 +25,8 @@ npm run dev
 | --- | --- |
 | `npm run typecheck` | Periksa tipe UI dan konfigurasi Vite |
 | `npm run lint` | Oxlint |
-| `npm test` | Regresi aktivitas/kontrak serta logika TypeScript sebelumnya |
+| `npm test` | Regresi pemilihan aktivitas, kontrak command, timeline media, dan sisa waktu timer |
+| `npm run test:ui` | Regresi animasi panel, scrollbar, dan alur notifikasi dengan data simulasi |
 | `npm run test:startup` | Integrasi registry startup, opt-out, pindah lokasi, dan uninstall pada key sementara |
 | `npm run build` | Build Vite dan WindowsHost |
 | `npm start` | Jalankan hasil build |
@@ -53,7 +54,7 @@ Profil `%APPDATA%/dynamic-island` kompatibel dengan versi sebelumnya; `ISLAND_PR
 
 Window maksimum 460 × 320 DIP, 12 DIP dari sisi atas work area monitor utama. Area kosong dan sudut membulat meneruskan klik; host memeriksa cursor terhadap DOM karena WebView2 tidak meneruskan mousemove selama click-through. Tray menyediakan Tampilkan, Sembunyikan, Keluar; instance kedua menampilkan instance pertama.
 
-Notifikasi memerlukan identitas MSIX dan izin Windows, dinonaktifkan secara default, serta belum memiliki kontrol izin di UI. Menutup overlay tidak menghapus notifikasi Windows. Pengujian unpacked tidak membuktikan izin MSIX.
+Notifikasi memerlukan identitas MSIX dan izin Windows serta dinonaktifkan secara default. Ikon lonceng membuka panel status akses dan kontrol izin/aktivasi. EXE dan ZIP menampilkan penjelasan kebutuhan MSIX. Menutup tampilan tidak menghapus notifikasi Windows. Pengujian unpacked dan data simulasi tidak membuktikan izin MSIX.
 
 ## GitHub Release
 
@@ -64,10 +65,10 @@ Untuk rilis, ubah versi package/lockfile, commit, push, dan push tag `v` + versi
 ```sh
 npm version patch --no-git-tag-version
 git add package.json package-lock.json
-git commit -m "chore: release v0.2.1"
+git commit -m "chore: release v0.2.4" -m "Co-authored-by: Codex <noreply@openai.com>"
 git push origin main
-git tag v0.2.1
-git push origin v0.2.1
+git tag v0.2.4
+git push origin v0.2.4
 ```
 
 Setelah pemeriksaan lulus, tag push menerbitkan Release dengan installer, ZIP, checksum SHA256, dan release notes. Push branch/manual hanya menghasilkan artifact.

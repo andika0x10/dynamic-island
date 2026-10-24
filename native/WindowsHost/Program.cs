@@ -163,7 +163,7 @@ internal sealed class Overlay : Form
             if (type == "clickThrough") { SetClickThrough(root.GetProperty("value").GetBoolean()); return; }
             var id = root.GetProperty("id").GetInt64();
             object? value = type switch {
-                "getActivity" => service.Snapshot, "getBattery" => service.Snapshot.Battery,
+                "getActivity" => service.Snapshot,
                 "command" => await service.CommandAsync(root.GetProperty("value").Clone()), _ => null,
             };
             web.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(new { type = "response", id, value }, ActivityService.Json));

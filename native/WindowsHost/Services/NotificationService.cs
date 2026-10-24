@@ -1,9 +1,8 @@
 using System.Runtime.InteropServices;
 using Windows.UI.Notifications;
 using Windows.UI.Notifications.Management;
-using WindowsBridge.Protocol;
 
-namespace WindowsBridge.Notifications;
+namespace WindowsHost.Services;
 
 public sealed class NotificationService
 {

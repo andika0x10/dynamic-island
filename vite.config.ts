@@ -11,7 +11,7 @@ export default defineConfig(({ command }) => {
     html: command === 'serve' ? { cspNonce: nonce } : undefined,
     server: {
       host: '127.0.0.1', port: 5173, strictPort: true,
-      watch: { ignored: ['**/.tools/**', '**/release/**', '**/dist-electron/**', '**/native/**/bin/**', '**/native/**/obj/**', '**/test-results/**'] },
+      watch: { ignored: ['**/.tools/**', '**/release/**', '**/native/**/bin/**', '**/native/**/obj/**', '**/test-results/**'] },
     },
     plugins: [
       {

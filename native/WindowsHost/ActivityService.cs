@@ -1,9 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using WindowsBridge.Audio;
-using WindowsBridge.Media;
-using WindowsBridge.Notifications;
-using WindowsBridge.Protocol;
+using WindowsHost.Services;
 
 namespace WindowsHost;
 
@@ -133,7 +130,11 @@ internal sealed class ActivityService : IDisposable
                     if (Snapshot.Notification != null) dismissed.Add(Snapshot.Notification.Id);
                     if (dismissed.Count > 200) dismissed.Remove(dismissed.First());
                     Snapshot = Snapshot with { Notification = null }; Changed?.Invoke(); return new(true);
-                case "notification-access": await notifications.RequestAccessAsync(); return new(notifications.Access == "allowed");
+                case "notification-access":
+                    await notifications.RequestAccessAsync();
+                    Snapshot = Snapshot with { NotificationAccess = notifications.Access };
+                    Changed?.Invoke();
+                    return new(notifications.Access == "allowed", notifications.Access == "allowed" ? null : "Akses notifikasi belum diizinkan. Periksa izin notifikasi Windows.");
                 case "volume":
                     var volume = command.GetProperty("volume").GetDouble();
                     if (!Finite(volume, 0, 1)) return new(false, "Perintah tidak valid.");

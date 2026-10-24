@@ -77,6 +77,11 @@ try {
     await delay(400)
     await assertPanelFits(page, `WebView2 ${name}`)
   }
+  await page.getByRole('button', { name: 'Notifikasi', exact: true }).click()
+  await page.getByText('Notifikasi Windows memerlukan versi MSIX.', { exact: false }).waitFor()
+  await assertPanelFits(page, 'WebView2 Notifikasi')
+  assert.equal(await page.getByRole('button', { name: 'Izinkan notifikasi', exact: true }).count(), 0)
+  await page.getByRole('button', { name: 'Timer', exact: true }).click()
   await page.screenshot({ path: 'test-results/webview-expanded.png', omitBackground: true })
   await page.keyboard.press('Escape')
   await page.waitForFunction(() => document.querySelector('[aria-controls="island-content"]').getAttribute('aria-expanded') === 'false')

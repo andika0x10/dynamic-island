@@ -1,6 +1,4 @@
-using System.Text.Json.Serialization;
-
-namespace WindowsBridge.Protocol;
+namespace WindowsHost.Services;
 
 public record Controls(bool Play = false, bool Pause = false, bool Previous = false, bool Next = false, bool Seek = false);
 public record MediaState(string Availability = "unavailable", string Title = "", string Artist = "", string? Artwork = null,
@@ -10,16 +8,3 @@ public record MediaState(string Availability = "unavailable", string Title = "",
 }
 public record AudioState(string Availability = "unavailable", double Volume = 0, bool Muted = false, string Device = "");
 public record NotificationState(string Id, string App, string Title, string Body, long ReceivedAt);
-public record BridgeSnapshot(MediaState Media, AudioState Audio, string NotificationAccess, NotificationState? Notification)
-{
-    public string Type => "snapshot";
-}
-public record BridgeResult(long Id, bool Ok, string? Error)
-{
-    public string Type => "result";
-}
-
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
-[JsonSerializable(typeof(BridgeSnapshot))]
-[JsonSerializable(typeof(BridgeResult))]
-internal partial class BridgeJsonContext : JsonSerializerContext;

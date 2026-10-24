@@ -19,10 +19,6 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
     <PackageReference Include="Microsoft.Windows.SDK.Contracts" Version="10.0.19041.2" />
     <PackageReference Include="System.Text.Json" Version="10.0.0" />
-    <Compile Include="../WindowsBridge/Audio/AudioService.cs" Link="Services/AudioService.cs" />
-    <Compile Include="../WindowsBridge/Media/MediaService.cs" Link="Services/MediaService.cs" />
-    <Compile Include="../WindowsBridge/Notifications/NotificationService.cs" Link="Services/NotificationService.cs" />
-    <Compile Include="../WindowsBridge/Protocol/Messages.cs" Link="Protocol/Messages.cs" />
     <Content Include="../../dist/**/*" Link="ui/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../../src/platform/webview.js" Link="desktop.js" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

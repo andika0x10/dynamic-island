@@ -1,8 +1,7 @@
 using Windows.Media.Control;
 using Windows.Storage.Streams;
-using WindowsBridge.Protocol;
 
-namespace WindowsBridge.Media;
+namespace WindowsHost.Services;
 
 public sealed class MediaService
 {
